@@ -142,3 +142,13 @@ vercel
 Attach a Blob store in the Vercel dashboard (Storage → Create → Blob)
 to enable the share-via-link flow. The `BLOB_READ_WRITE_TOKEN` env var
 is auto-set.
+
+---
+
+## Team
+
+**Team Name:** NULL POINTERS
+
+**Members:**
+- Debnil Dey
+- Arnav Sharma
