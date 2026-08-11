@@ -47,9 +47,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${displayFont.variable} ${monoFont.variable} ${serifFont.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-mono bg-[#055C2E] text-[#FFFDF2]">{children}</body>
+      <body suppressHydrationWarning className="min-h-full flex flex-col font-mono bg-[#055C2E] text-[#FFFDF2]">
+        {children}
+      </body>
     </html>
   );
 }

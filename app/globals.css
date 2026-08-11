@@ -40,15 +40,24 @@ body {
 }
 
 /* ================================================================
-   Hide Next.js Dev Indicator completely
+   Hide Next.js Dev Indicator & Overlay Portals Completely
    ================================================================ */
 
-[data-nextjs-toast],
-next-route-announcer,
+nextjs-portal,
 #next-dev-indicator,
+[data-nextjs-toast],
+[data-nextjs-toast-errors-parent],
+[data-nextjs-dialog-overlay],
 [data-next-dev-indicator],
-div:has(> button[aria-label*="Next.js"]),
-button[aria-label*="Next.js"] {
+[class*="nextjs-toast"],
+[class*="next-dev-indicator"],
+[class*="nextjs-container"],
+next-route-announcer,
+button[aria-label*="Issue"],
+button[aria-label*="1 Issue"],
+button[aria-label*="Next.js"],
+div:has(> button[aria-label*="Issue"]),
+div:has(> button[aria-label*="Next.js"]) {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
