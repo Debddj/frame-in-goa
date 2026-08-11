@@ -1,0 +1,16 @@
+{
+  "name": "Frame in Goa",
+  "short_name": "FrameInGoa",
+  "description": "HH Goa 2026 — boarding pass & PFP frame generator",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#12181F",
+  "theme_color": "#12181F",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
