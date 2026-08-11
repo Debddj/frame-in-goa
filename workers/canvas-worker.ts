@@ -1,12 +1,5 @@
 /**
- * Web Worker that composites boarding pass / porthole frames on an
- * OffscreenCanvas, keeping the UI thread free. The worker receives
- * ImageBitmaps (zero-copy transferable objects) and all the scalar data
- * needed to render, then sends back the rendered result as an ImageBitmap.
- *
- * Falls back gracefully — if OffscreenCanvas isn't available, the hook
- * that manages this worker simply runs the drawing functions on the main
- * thread instead. See `use-canvas-worker.ts`.
+ * OffscreenCanvas Web Worker aligned with official HH Goa 26 Brand Kit.
  */
 
 import { theme } from "../lib/theme";
@@ -14,21 +7,14 @@ import { getCropStrategy } from "../lib/smart-crop";
 import { generateNoiseTexture } from "../lib/noise-texture";
 import type { FaceCenter } from "../lib/face-detector";
 
-// We can't import qrcode in the worker (it uses DOM APIs for canvas).
-// The QR is drawn from pre-generated pixel data passed in from main thread.
-
 const T = theme.color;
-
-// ─── Message Protocol ────────────────────────────────────────────────────
 
 export interface RenderRequest {
   type: "render";
   format: "boardingPass" | "porthole";
-  // Porthole data
   photo?: ImageBitmap;
   builderNumber?: string;
   faceCenter?: FaceCenter | null;
-  // Boarding pass scalar data
   boardingPass?: {
     passengers: Array<{
       name: string;
@@ -40,7 +26,7 @@ export interface RenderRequest {
     seat: string;
     gate: string;
     flightCode: string;
-    qrBitmap?: ImageBitmap; // Pre-rendered QR from the main thread
+    qrBitmap?: ImageBitmap;
     isTeam: boolean;
   };
 }
@@ -49,8 +35,6 @@ export interface RenderResponse {
   type: "rendered";
   bitmap: ImageBitmap;
 }
-
-// ─── Shared Helpers (duplicated from canvas-engine for worker isolation) ──
 
 function roundRectPath(
   ctx: OffscreenCanvasRenderingContext2D,
@@ -88,7 +72,7 @@ function drawCircularPhoto(
   if (bitmap) {
     drawCropped(ctx, bitmap, cx - radius, cy - radius, radius * 2, radius * 2, faceCenter);
   } else {
-    ctx.fillStyle = T.sand;
+    ctx.fillStyle = "#E5D9B6";
     ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
   }
   ctx.restore();
@@ -99,29 +83,95 @@ function drawPerforation(
   x: number, yTop: number, yBottom: number
 ) {
   ctx.save();
-  ctx.strokeStyle = T.sandDark;
-  ctx.lineWidth = 2;
-  ctx.setLineDash([6, 8]);
+  ctx.strokeStyle = T.sand;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([8, 10]);
   ctx.beginPath();
-  ctx.moveTo(x, yTop + 14);
-  ctx.lineTo(x, yBottom - 14);
+  ctx.moveTo(x, yTop + 16);
+  ctx.lineTo(x, yBottom - 16);
   ctx.stroke();
   ctx.restore();
 
   ctx.save();
-  ctx.fillStyle = T.ink;
+  ctx.fillStyle = T.emerald;
   ctx.beginPath();
-  ctx.arc(x, yTop, 14, 0, Math.PI * 2);
+  ctx.arc(x, yTop, 16, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(x, yBottom, 14, 0, Math.PI * 2);
+  ctx.arc(x, yBottom, 16, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+}
+
+function drawPalmTreeAccentWorker(
+  ctx: OffscreenCanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale = 1,
+  color: string = T.emeraldDark
+) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 3;
+
+  ctx.beginPath();
+  ctx.moveTo(0, 50);
+  ctx.quadraticCurveTo(8, 25, 12, 0);
+  ctx.lineWidth = 5;
+  ctx.stroke();
+
+  const angles = [-0.8, -0.4, 0, 0.4, 0.8];
+  angles.forEach((a) => {
+    ctx.save();
+    ctx.translate(12, 0);
+    ctx.rotate(a);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(15, -12, 30, -5);
+    ctx.quadraticCurveTo(15, 0, 0, 0);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  ctx.restore();
+}
+
+function drawGoaBadgeWorker(
+  ctx: OffscreenCanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  scale = 1
+) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+  ctx.rotate(-0.08);
+
+  const w = 110;
+  const h = 48;
+
+  roundRectPath(ctx, -w / 2, -h / 2, w, h, 24);
+  ctx.fillStyle = T.magenta;
+  ctx.fill();
+  ctx.strokeStyle = T.yellow;
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  ctx.fillStyle = T.white;
+  ctx.font = "900 28px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("गोवा", 0, 2);
+
   ctx.restore();
 }
 
 function applyNoiseOverlayWorker(
   ctx: OffscreenCanvasRenderingContext2D,
-  x: number, y: number, w: number, h: number, alpha = 18
+  x: number, y: number, w: number, h: number, alpha = 14
 ) {
   const noise = generateNoiseTexture(w, h, alpha);
   const tempCanvas = new OffscreenCanvas(w, h);
@@ -139,17 +189,15 @@ function wrapOrFit(
   text: string, x: number, y: number, maxWidth: number, startSize: number
 ) {
   let size = startSize;
-  const family = theme.font.display;
-  while (size > 16) {
-    ctx.font = `600 ${size}px ${family}`;
+  const family = theme.font.mono;
+  while (size > 14) {
+    ctx.font = `700 ${size}px ${family}`;
     if (ctx.measureText(text).width <= maxWidth) break;
     size -= 2;
   }
-  ctx.font = `600 ${size}px ${family}`;
+  ctx.font = `700 ${size}px ${family}`;
   ctx.fillText(text, x, y);
 }
-
-// ─── Render functions ────────────────────────────────────────────────────
 
 function renderPorthole(
   canvas: OffscreenCanvas,
@@ -162,43 +210,39 @@ function renderPorthole(
   canvas.height = h;
   const ctx = canvas.getContext("2d")!;
 
-  ctx.fillStyle = T.ink;
+  ctx.fillStyle = T.emerald;
   ctx.fillRect(0, 0, w, h);
+
+  drawPalmTreeAccentWorker(ctx, 40, h - 180, 2.2, "#034823");
+  drawPalmTreeAccentWorker(ctx, w - 120, h - 220, 2.5, "#034823");
 
   const cx = w / 2;
   const cy = h / 2 - 20;
-  const photoRadius = w * 0.36;
+  const photoRadius = w * 0.35;
 
   drawCircularPhoto(ctx, photo, cx, cy, photoRadius, faceCenter);
 
-  // Gradient ring
   ctx.save();
-  const ringGrad = ctx.createConicGradient(0, cx, cy);
-  ringGrad.addColorStop(0, T.teal);
-  ringGrad.addColorStop(0.25, "#167A62");
-  ringGrad.addColorStop(0.5, T.teal);
-  ringGrad.addColorStop(0.75, "#24A080");
-  ringGrad.addColorStop(1, T.teal);
-  ctx.strokeStyle = ringGrad;
-  ctx.lineWidth = 22;
+  ctx.strokeStyle = T.yellow;
+  ctx.lineWidth = 24;
   ctx.beginPath();
-  ctx.arc(cx, cy, photoRadius + 11, 0, Math.PI * 2);
+  ctx.arc(cx, cy, photoRadius + 12, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.strokeStyle = T.coral;
-  ctx.lineWidth = 5;
+
+  ctx.strokeStyle = T.magenta;
+  ctx.lineWidth = 8;
   ctx.beginPath();
-  ctx.arc(cx, cy, photoRadius + 26, 0, Math.PI * 2);
+  ctx.arc(cx, cy, photoRadius + 28, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 
-  // Circular text
   ctx.save();
-  ctx.fillStyle = T.sand;
-  ctx.font = `600 18px ${theme.font.mono}`;
+  ctx.fillStyle = T.yellow;
+  ctx.font = `700 20px ${theme.font.mono}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   const textRadius = photoRadius + 48;
-  const chars = "· HH GOA 2026 · BUILDER RESIDENCY ".split("");
+  const chars = "★ HACKER HOUSE ★ GOA 28-31 OCT 2026 ★ 2:47 PM STUDIO ".split("");
   const angleStep = (Math.PI * 2) / chars.length;
   chars.forEach((char, i) => {
     const angle = -Math.PI / 2 + i * angleStep;
@@ -210,32 +254,30 @@ function renderPorthole(
   });
   ctx.restore();
 
-  // Badge
-  const badgeR = 64;
   const badgeCx = cx + photoRadius * 0.72;
   const badgeCy = cy + photoRadius * 0.72;
+  drawGoaBadgeWorker(ctx, badgeCx, badgeCy, 1.4);
+
   ctx.save();
-  ctx.fillStyle = T.teal;
-  ctx.beginPath();
-  ctx.arc(badgeCx, badgeCy, badgeR, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = T.ink;
-  ctx.lineWidth = 6;
-  ctx.stroke();
-  ctx.fillStyle = T.cardStock;
-  ctx.font = `600 ${badgeR * 0.62}px ${theme.font.mono}`;
+  ctx.fillStyle = T.yellow;
+  ctx.fillRect(cx - 140, 50, 280, 48);
+  ctx.strokeStyle = T.magenta;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(cx - 140, 50, 280, 48);
+
+  ctx.fillStyle = T.emeraldDark;
+  ctx.font = `800 24px ${theme.font.mono}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(builderNumber, badgeCx, badgeCy + 2);
+  ctx.fillText(`BUILDER #${builderNumber}`, cx, 74);
   ctx.restore();
 
-  // Bottom tag
   ctx.save();
-  ctx.fillStyle = T.sand;
-  ctx.font = `500 30px ${theme.font.mono}`;
+  ctx.fillStyle = T.white;
+  ctx.font = `600 28px ${theme.font.mono}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.fillText("HH GOA · 2026", cx, h - 60);
+  ctx.fillText("#FrameInGoa · 2:47 PM STUDIO", cx, h - 50);
   ctx.restore();
 
   return canvas.transferToImageBitmap();
@@ -252,8 +294,11 @@ function renderBoardingPass(
   canvas.height = h;
   const ctx = canvas.getContext("2d")!;
 
-  ctx.fillStyle = T.ink;
+  ctx.fillStyle = T.emerald;
   ctx.fillRect(0, 0, w, h);
+
+  drawPalmTreeAccentWorker(ctx, 20, 20, 2, "#034823");
+  drawPalmTreeAccentWorker(ctx, w - 80, h - 160, 2.2, "#034823");
 
   const margin = 40;
   const cardX = margin;
@@ -262,19 +307,19 @@ function renderBoardingPass(
   const cardH = h - margin * 2;
   const stubSplitX = cardX + cardW * 0.74;
 
-  // Card body
   roundRectPath(ctx, cardX, cardY, cardW, cardH, 28);
   ctx.fillStyle = T.cardStock;
   ctx.fill();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = T.yellow;
+  ctx.stroke();
 
-  // Paper grain
   ctx.save();
   roundRectPath(ctx, cardX, cardY, cardW, cardH, 28);
   ctx.clip();
-  applyNoiseOverlayWorker(ctx, cardX, cardY, cardW, cardH, 18);
+  applyNoiseOverlayWorker(ctx, cardX, cardY, cardW, cardH, 14);
   ctx.restore();
 
-  // Main stub
   const padX = 56;
   const contentX = cardX + padX;
   const contentW = stubSplitX - cardX - padX * 1.4;
@@ -283,146 +328,186 @@ function renderBoardingPass(
   roundRectPath(ctx, cardX, cardY, cardW, cardH, 28);
   ctx.clip();
 
-  // Eyebrow
-  ctx.fillStyle = T.sandDark;
-  ctx.font = `600 20px ${theme.font.mono}`;
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillText("HH GOA · BUILDER RESIDENCY", contentX, cardY + 56);
+  const headerH = 140;
+  ctx.fillStyle = T.emerald;
+  ctx.fillRect(cardX, cardY, stubSplitX - cardX, headerH);
+
+  ctx.fillStyle = T.yellow;
+  ctx.font = `800 18px ${theme.font.mono}`;
+  ctx.fillText("2:47 PM STUDIO", contentX, cardY + 36);
+
   ctx.textAlign = "right";
-  ctx.fillText("28–31 OCT", contentX + contentW, cardY + 56);
+  ctx.fillText("GOA, INDIA · 28-31 OCT 2026", contentX + contentW, cardY + 36);
   ctx.textAlign = "left";
 
-  ctx.strokeStyle = T.coral;
-  ctx.lineWidth = 3;
+  ctx.fillStyle = T.yellow;
+  ctx.font = `900 58px ${theme.font.serif}`;
+  ctx.fillText("HACKER HOUSE", contentX, cardY + 104);
+
+  const titleWidth = ctx.measureText("HACKER HOUSE").width;
+  drawGoaBadgeWorker(ctx, contentX + titleWidth / 2 + 10, cardY + 76, 1.1);
+
+  ctx.strokeStyle = T.magenta;
+  ctx.lineWidth = 5;
   ctx.beginPath();
-  ctx.moveTo(contentX, cardY + 74);
-  ctx.lineTo(contentX + contentW, cardY + 74);
+  ctx.moveTo(contentX, cardY + headerH);
+  ctx.lineTo(contentX + contentW, cardY + headerH);
   ctx.stroke();
 
   const isTeam = data.isTeam;
 
   if (!isTeam) {
     const p = data.passengers[0];
-    const photoR = 90;
+    const photoR = 85;
     const photoCx = contentX + photoR;
-    const photoCy = cardY + 74 + 40 + photoR;
+    const photoCy = cardY + headerH + 30 + photoR;
     drawCircularPhoto(ctx, p?.photo, photoCx, photoCy, photoR, p?.faceCenter);
-    ctx.strokeStyle = T.teal;
-    ctx.lineWidth = 5;
+    ctx.strokeStyle = T.yellow;
+    ctx.lineWidth = 8;
     ctx.beginPath();
-    ctx.arc(photoCx, photoCy, photoR + 5, 0, Math.PI * 2);
+    ctx.arc(photoCx, photoCy, photoR + 4, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.strokeStyle = T.emerald;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(photoCx, photoCy, photoR + 9, 0, Math.PI * 2);
+    ctx.stroke();
+
     const textX = photoCx + photoR + 32;
     ctx.fillStyle = T.navy;
-    ctx.font = `600 42px ${theme.font.display}`;
+    ctx.font = `700 44px ${theme.font.display}`;
     ctx.textAlign = "left";
-    ctx.fillText(p?.name || "Builder name", textX, photoCy - 6);
-    ctx.fillStyle = T.sandDark;
-    ctx.font = `500 22px ${theme.font.mono}`;
-    ctx.fillText(p?.stackOrRole || "stack / role", textX, photoCy + 30);
+    ctx.fillText(p?.name || "Builder Name", textX, photoCy - 10);
+    ctx.fillStyle = T.magenta;
+    ctx.font = `600 24px ${theme.font.mono}`;
+    ctx.fillText(p?.stackOrRole || "Stack / Role", textX, photoCy + 32);
   } else {
     const shown = data.passengers.slice(0, 4);
     const overflow = data.passengers.length - shown.length;
-    const rowY = cardY + 74 + 46;
-    const thumbR = 52;
+    const rowY = cardY + headerH + 50;
+    const thumbR = 50;
     const gap = (contentW - shown.length * thumbR * 2) / Math.max(shown.length - 1, 1);
     shown.forEach((p, i) => {
       const pcx = contentX + thumbR + i * (thumbR * 2 + gap);
       drawCircularPhoto(ctx, p.photo, pcx, rowY, thumbR, p.faceCenter);
-      ctx.strokeStyle = T.teal;
-      ctx.lineWidth = 4;
+      ctx.strokeStyle = T.yellow;
+      ctx.lineWidth = 5;
       ctx.beginPath();
-      ctx.arc(pcx, rowY, thumbR + 4, 0, Math.PI * 2);
+      ctx.arc(pcx, rowY, thumbR + 3, 0, Math.PI * 2);
       ctx.stroke();
       ctx.fillStyle = T.navy;
-      ctx.font = `600 18px ${theme.font.display}`;
+      ctx.font = `700 18px ${theme.font.display}`;
       ctx.textAlign = "center";
       ctx.fillText((p.name || "Builder").split(" ")[0], pcx, rowY + thumbR + 30);
     });
     if (overflow > 0) {
-      ctx.fillStyle = T.sandDark;
-      ctx.font = `500 18px ${theme.font.mono}`;
+      ctx.fillStyle = T.magenta;
+      ctx.font = `700 18px ${theme.font.mono}`;
       ctx.textAlign = "left";
       ctx.fillText(`+${overflow} more`, contentX + contentW - 110, rowY + thumbR + 30);
     }
     ctx.textAlign = "left";
     ctx.fillStyle = T.navy;
-    ctx.font = `600 40px ${theme.font.display}`;
-    ctx.fillText("Team crew", contentX, rowY + thumbR + 90);
+    ctx.font = `700 38px ${theme.font.display}`;
+    ctx.fillText("Team Builder Crew", contentX, rowY + thumbR + 90);
   }
 
-  // Data fields
-  const fieldY = cardY + cardH - 190;
-  const fields: [string, string][] = isTeam
-    ? [["ROW", data.seat], ["GATE", data.gate], ["SQUAD", `${data.passengers.length} BUILDERS`]]
-    : [["SEAT", data.seat], ["GATE", data.gate], ["CLASS", data.passengers[0]?.builderTitle ?? ""]];
+  const fieldY = cardY + cardH - 195;
+  const fields: [string, string, string][] = isTeam
+    ? [["ROW", data.seat, T.yellow], ["GATE", data.gate, T.magenta], ["SQUAD", `${data.passengers.length} BUILDERS`, T.yellow]]
+    : [["SEAT", data.seat, T.yellow], ["GATE", data.gate, T.magenta], ["CLASS", data.passengers[0]?.builderTitle ?? "", T.yellow]];
 
   const fieldColW = contentW / 3;
-  fields.forEach(([label, value], i) => {
+  fields.forEach(([label, value, badgeColor], i) => {
     const fx = contentX + i * fieldColW;
-    ctx.fillStyle = T.sandDark;
-    ctx.font = `600 18px ${theme.font.mono}`;
-    ctx.fillText(label, fx, fieldY);
     ctx.fillStyle = T.navy;
-    ctx.font = `600 34px ${theme.font.display}`;
-    wrapOrFit(ctx, value.toUpperCase(), fx, fieldY + 42, fieldColW - 20, 36);
+    ctx.font = `700 18px ${theme.font.mono}`;
+    ctx.fillText(label, fx, fieldY);
+
+    const bw = fieldColW - 24;
+    const bh = 54;
+    const by = fieldY + 12;
+
+    roundRectPath(ctx, fx, by, bw, bh, 12);
+    ctx.fillStyle = badgeColor;
+    ctx.fill();
+    ctx.strokeStyle = T.navy;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.fillStyle = badgeColor === T.yellow ? T.navy : T.white;
+    ctx.font = `700 24px ${theme.font.mono}`;
+    wrapOrFit(ctx, value.toUpperCase(), fx + 12, by + 34, bw - 24, 24);
   });
 
-  // Bottom meta
   ctx.strokeStyle = T.sand;
   ctx.lineWidth = 2;
-  ctx.setLineDash([4, 6]);
+  ctx.setLineDash([6, 6]);
   ctx.beginPath();
-  ctx.moveTo(contentX, cardY + cardH - 70);
-  ctx.lineTo(contentX + contentW, cardY + cardH - 70);
+  ctx.moveTo(contentX, cardY + cardH - 68);
+  ctx.lineTo(contentX + contentW, cardY + cardH - 68);
   ctx.stroke();
   ctx.setLineDash([]);
 
-  ctx.fillStyle = T.sandDark;
-  ctx.font = `500 18px ${theme.font.mono}`;
+  ctx.fillStyle = T.navy;
+  ctx.font = `600 18px ${theme.font.mono}`;
   ctx.fillText(
-    `FLIGHT ${data.flightCode} · ${isTeam ? "TEAM MANIFEST" : "SOLO PASS"}`,
-    contentX, cardY + cardH - 38
+    `FLIGHT ${data.flightCode} · ${isTeam ? "TEAM MANIFEST" : "SOLO BUILDER PASS"} · 2:47 PM STUDIO`,
+    contentX, cardY + cardH - 36
   );
   ctx.restore();
 
-  // Perforation
   drawPerforation(ctx, stubSplitX, cardY, cardY + cardH);
 
-  // QR stub
   ctx.save();
   roundRectPath(ctx, cardX, cardY, cardW, cardH, 28);
   ctx.clip();
+
   const stubW = cardX + cardW - stubSplitX;
   const stubCx = stubSplitX + stubW / 2;
-  ctx.fillStyle = "#EFE6D2";
+
+  ctx.fillStyle = T.yellow;
   ctx.fillRect(stubSplitX, cardY, stubW, cardH);
-  const qrSize = Math.min(stubW - 60, 260);
+
+  ctx.fillStyle = T.emerald;
+  ctx.fillRect(stubSplitX, cardY, stubW, 60);
+
+  ctx.fillStyle = T.yellow;
+  ctx.font = `800 18px ${theme.font.mono}`;
+  ctx.textAlign = "center";
+  ctx.fillText("HH GOA 26", stubCx, cardY + 36);
+
+  const qrSize = Math.min(stubW - 60, 240);
 
   if (data.qrBitmap) {
-    ctx.drawImage(data.qrBitmap, stubCx - qrSize / 2, cardY + 70, qrSize, qrSize);
+    ctx.drawImage(data.qrBitmap, stubCx - qrSize / 2, cardY + 84, qrSize, qrSize);
   }
 
-  ctx.fillStyle = T.navy;
-  ctx.font = `600 22px ${theme.font.mono}`;
+  roundRectPath(ctx, stubCx - 70, cardY + 84 + qrSize + 24, 140, 48, 12);
+  ctx.fillStyle = T.magenta;
+  ctx.fill();
+  ctx.strokeStyle = T.navy;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.fillStyle = T.white;
+  ctx.font = `800 24px ${theme.font.mono}`;
   ctx.textAlign = "center";
-  ctx.fillText(data.seat, stubCx, cardY + 70 + qrSize + 46);
+  ctx.fillText(data.seat, stubCx, cardY + 84 + qrSize + 56);
 
   ctx.save();
-  ctx.translate(stubCx, cardY + cardH - 60);
+  ctx.translate(stubCx, cardY + cardH - 50);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = T.coral;
-  ctx.font = `600 20px ${theme.font.mono}`;
+  ctx.fillStyle = T.emeraldDark;
+  ctx.font = `800 20px ${theme.font.mono}`;
   ctx.textAlign = "center";
   ctx.fillText("#FrameInGoa", 0, 0);
   ctx.restore();
+
   ctx.restore();
 
   return canvas.transferToImageBitmap();
 }
-
-// ─── Message Handler ─────────────────────────────────────────────────────
 
 const offscreen = new OffscreenCanvas(1, 1);
 

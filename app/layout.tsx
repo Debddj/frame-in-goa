@@ -1,10 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { Space_Grotesk, IBM_Plex_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
-// Signature type pairing for the boarding-pass concept: a geometric
-// display face for names/headings, a mono face for ticket data fields
-// (SEAT / GATE / FLIGHT) that reads like real departure-board typography.
 const displayFont = Space_Grotesk({
   variable: "--font-display-src",
   subsets: ["latin"],
@@ -12,24 +9,30 @@ const displayFont = Space_Grotesk({
 
 const monoFont = IBM_Plex_Mono({
   variable: "--font-mono-src",
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+});
+
+const serifFont = Playfair_Display({
+  variable: "--font-serif-src",
+  weight: ["600", "700", "800", "900"],
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "HH Goa 2026 — Frame in Goa",
+  title: "HH Goa 2026 — Frame in Goa | 2:47 PM Studio",
   description:
-    "Upload a photo, get a branded HH Goa 2026 boarding pass or PFP frame, share it in one tap. #FrameInGoa",
+    "Upload a photo, get an official branded HH Goa 2026 boarding pass or PFP frame, share it in one tap. #FrameInGoa",
   openGraph: {
     title: "HH Goa 2026 — Frame in Goa",
-    description: "Get your HH Goa 2026 boarding pass. Upload → Frame → Share. #FrameInGoa",
+    description: "Get your official HH Goa 2026 boarding pass. Upload → Frame → Share. #FrameInGoa",
     siteName: "Frame in Goa",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "HH Goa 2026 — Frame in Goa",
-    description: "Get your HH Goa 2026 boarding pass. Upload → Frame → Share. #FrameInGoa",
+    description: "Get your official HH Goa 2026 boarding pass. Upload → Frame → Share. #FrameInGoa",
   },
   manifest: "/manifest.json",
 };
@@ -37,16 +40,16 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#12181F",
+  themeColor: "#055C2E",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${displayFont.variable} ${monoFont.variable} h-full antialiased`}
+      className={`${displayFont.variable} ${monoFont.variable} ${serifFont.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-mono">{children}</body>
+      <body className="min-h-full flex flex-col font-mono bg-[#055C2E] text-[#FFFDF2]">{children}</body>
     </html>
   );
 }

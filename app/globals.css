@@ -1,24 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  /* Mirrors lib/theme.ts — the canvas engine can't read CSS vars, so
-     that file is the source of truth; these just need to stay in sync. */
-  --ink: #12181F;
-  --card-stock: #F6EFE1;
-  --coral: #FF6B4A;
-  --teal: #1F8A70;
-  --sand: #D8C9A3;
-  --navy: #1B2430;
+  /* Official HH Goa 2026 Brand Kit Tokens */
+  --emerald: #055C2E;
+  --emerald-dark: #02381A;
+  --emerald-light: #0D723B;
+  --yellow: #FFEB00;
+  --yellow-dark: #D6C400;
+  --magenta: #FF007A;
+  --magenta-dark: #C7005F;
+  --sun-orange: #FF9900;
+  --card-stock: #FFFDF2;
+  --ink: #055C2E;
+  --navy: #0A2416;
 }
 
-/* Tailwind CSS v4 custom theme directives */
 @theme inline {
   --font-display: var(--font-display-src);
   --font-mono: var(--font-mono-src);
+  --font-serif: var(--font-serif-src);
 }
 
 /* ================================================================
-   Base
+   Base Styles
    ================================================================ */
 
 html {
@@ -26,17 +30,17 @@ html {
 }
 
 body {
-  background: var(--ink);
+  background-color: var(--emerald);
   color: var(--card-stock);
 }
 
 ::selection {
-  background: var(--coral);
-  color: var(--ink);
+  background: var(--yellow);
+  color: #000000;
 }
 
 /* ================================================================
-   Noise texture overlay — subtle paper grain across the page
+   Tropical Noise Overlay
    ================================================================ */
 
 body::before {
@@ -45,38 +49,97 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 256px 256px;
 }
 
 /* ================================================================
-   Custom scrollbar
+   Custom Scrollbar
    ================================================================ */
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--emerald-dark);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--sand);
-  border-radius: 3px;
-  opacity: 0.3;
+  background: var(--yellow);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  opacity: 0.6;
+  background: #ffffff;
 }
 
 /* ================================================================
-   Animations
+   Brandkit Specific UI Components
    ================================================================ */
 
+/* Devanagari Goa Badge ("गोवा") */
+.goa-badge {
+  display: inline-block;
+  background: var(--magenta);
+  color: #ffffff;
+  font-weight: 900;
+  padding: 0.15em 0.45em;
+  border-radius: 9999px;
+  border: 3px solid var(--yellow);
+  box-shadow: 0 4px 12px rgba(255, 0, 122, 0.4), 0 0 0 2px #000000;
+  text-shadow: 1px 1px 0 #000;
+  transform: rotate(-4deg);
+}
+
+/* Retro Signpost Arrow Button */
+.signpost-arrow {
+  position: relative;
+  background: var(--yellow);
+  color: var(--emerald-dark);
+  font-weight: 700;
+  clip-path: polygon(0% 0%, 92% 0%, 100% 50%, 92% 100%, 0% 100%);
+  transition: all 0.2s ease;
+}
+
+.signpost-arrow-magenta {
+  background: var(--magenta);
+  color: #ffffff;
+}
+
+/* Stamp Button with scalloped/dotted border (like APPLY button) */
+.stamp-button {
+  background: var(--yellow);
+  color: var(--emerald-dark);
+  border: 3px dashed var(--magenta);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  box-shadow: 4px 4px 0px #000000;
+  transition: all 0.2s ease;
+}
+
+.stamp-button:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #000000;
+}
+
+.stamp-button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #000000;
+}
+
+/* Glassmorphism with Emerald tint */
+.glass {
+  background: rgba(2, 56, 26, 0.75);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 2px solid rgba(255, 235, 0, 0.25);
+}
+
+/* Animations */
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
@@ -93,42 +156,9 @@ body::before {
   }
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 74, 0); }
-  50% { box-shadow: 0 0 20px 4px rgba(255, 107, 74, 0.3); }
-}
-
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-@keyframes border-pulse {
-  0%, 100% { border-color: rgba(255, 107, 74, 0.3); }
-  50% { border-color: rgba(255, 107, 74, 0.8); }
-}
-
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes check-pop {
-  0% { transform: scale(0); opacity: 0; }
-  60% { transform: scale(1.2); }
-  100% { transform: scale(1); opacity: 1; }
+@keyframes pulse-glow-brand {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 235, 0, 0); }
+  50% { box-shadow: 0 0 24px 6px rgba(255, 235, 0, 0.4); }
 }
 
 .animate-float {
@@ -139,38 +169,14 @@ body::before {
   animation: fade-in-up 0.5s ease-out both;
 }
 
-.animate-shimmer {
-  background: linear-gradient(90deg, transparent 0%, var(--sand) 50%, transparent 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+.animate-pulse-glow-brand {
+  animation: pulse-glow-brand 2s ease-in-out infinite;
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient-shift 6s ease infinite;
-}
-
-.animate-scale-in {
-  animation: scale-in 0.4s ease-out both;
-}
-
-.animate-check-pop {
-  animation: check-pop 0.4s ease-out both;
-}
-
-/* Staggered entrance animations */
 .stagger-1 { animation-delay: 0.1s; }
 .stagger-2 { animation-delay: 0.2s; }
 .stagger-3 { animation-delay: 0.3s; }
 .stagger-4 { animation-delay: 0.4s; }
-
-/* ================================================================
-   3D tilt container
-   ================================================================ */
 
 .card-tilt {
   perspective: 800px;
@@ -179,15 +185,4 @@ body::before {
 
 .card-tilt-inner {
   transition: transform 0.15s ease-out;
-}
-
-/* ================================================================
-   Glassmorphism
-   ================================================================ */
-
-.glass {
-  background: rgba(27, 36, 48, 0.6);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(216, 201, 163, 0.12);
 }

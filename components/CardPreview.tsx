@@ -27,7 +27,6 @@ export default function CardPreview({
     });
   }, [format, boardingPassData, builderNumber, render]);
 
-  // 3D tilt effect on desktop hover
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const container = containerRef.current;
     if (!container) return;
@@ -57,13 +56,13 @@ export default function CardPreview({
       onMouseLeave={handleMouseLeave}
     >
       <div
-        className={`card-tilt-inner rounded-2xl overflow-hidden border border-[#D8C9A3]/10 p-3 glass transition-all duration-300 ${
+        className={`card-tilt-inner rounded-2xl overflow-hidden border-2 border-[#FFEB00]/40 p-3 glass shadow-2xl shadow-[#02381A] transition-all duration-300 ${
           hasRendered ? "animate-scale-in" : ""
         }`}
       >
         <canvas
           ref={canvasRef}
-          className="w-full h-auto rounded-lg"
+          className="w-full h-auto rounded-xl"
           aria-label="Live preview of your HH Goa 2026 card"
         />
       </div>

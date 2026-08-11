@@ -1,33 +1,38 @@
-// Design tokens for the HH Goa 2026 boarding-pass concept.
-// Shared between CSS (globals.css mirrors these as custom properties)
-// and the canvas engine (which can't read CSS vars, so it imports this directly).
-//
-// Direction: a departure-board / flight-ticket aesthetic, not the
-// jungle-green + mustard "tropical passport" look most other Task #1
-// submissions are converging on. Dusk-navy ground, warm cream ticket
-// stock, one coral accent used sparingly as the signature color.
+// Official HH Goa 2026 (2:47 PM Studio) Brand Kit Tokens.
+// Direct palette and typography sampled from official HH Goa 26 assets.
 
 export const theme = {
   color: {
-    ink: "#12181F", // page/app background — dusk, not pure black
-    cardStock: "#F6EFE1", // the ticket itself — warm paper white
-    coral: "#FF6B4A", // signature accent — used sparingly (stub, seat number)
-    teal: "#1F8A70", // secondary accent — porthole ring, gate marker
-    navy: "#1B2430", // primary text on cream
-    sand: "#D8C9A3", // dividers, perforation dots, muted labels
-    sandDark: "#9C8F6C", // muted label text on cream (AA against cardStock)
+    // Primary palm emerald ground (sampled from official website background)
+    emerald: "#055C2E",
+    emeraldDark: "#02381A",
+    emeraldLight: "#0D723B",
+    
+    // Signature Sun Yellow (used for main HACKER HOUSE title & signposts)
+    yellow: "#FFEB00",
+    yellowDark: "#D6C400",
+
+    // Signature Hot Magenta / Neon Pink (used for Devanagari गोवा script & badges)
+    magenta: "#FF007A",
+    magentaDark: "#C7005F",
+
+    // Goa Sunset Orange
+    sunOrange: "#FF9900",
+
+    // Ticket & UI surface colors
+    cardStock: "#FFFDF2", // warm paper cream
+    ink: "#055C2E",       // text ground
+    navy: "#0A2416",      // deep palm dark text
+    sand: "#E5D9B6",      // subtle dividers
+    sandDark: "#055C2E",  // labels on card
+    white: "#FFFFFF",
+    black: "#111111",
   },
   font: {
-    // Mono carries the "ticket data" fields (SEAT / GATE / FLIGHT) —
-    // borrowed from real departure-board typography, which is the
-    // signature element of the whole design.
     mono: "'IBM Plex Mono', ui-monospace, monospace",
-    // A geometric sans with actual personality for names/headings,
-    // deliberately not Inter/system-ui.
     display: "'Space Grotesk', ui-sans-serif, sans-serif",
+    serif: "'Playfair Display', 'Bodoni Moda', Georgia, serif",
   },
-  // Canonical export sizes. 2x the visual design size so the PNG
-  // stays crisp when embedded in an X card or cropped to a circular PFP.
   export: {
     boardingPass: { w: 1600, h: 1000 },
     porthole: { w: 1200, h: 1200 },

@@ -15,19 +15,18 @@ function nextId() {
   return `passenger-${uid}`;
 }
 
-function emptyPassenger(): Passenger {
+function emptyPassenger(title = "Genesis Day Builder"): Passenger {
   return {
     id: nextId(),
     name: "",
     stackOrRole: "",
-    builderTitle: generateBuilderTitle(""),
+    builderTitle: title,
     photo: null,
     photoObjectUrl: null,
     faceCenter: null,
   };
 }
 
-// Step tracker — shows where the user is in the flow
 function StepIndicator({ currentStep }: { currentStep: number }) {
   const steps = ["Upload", "Customize", "Share"];
   return (
@@ -35,19 +34,19 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
       {steps.map((label, i) => (
         <div key={label} className="flex items-center gap-2">
           <div
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono transition-all duration-300 ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold transition-all duration-300 ${
               i <= currentStep
-                ? "bg-[#FF6B4A]/15 text-[#FF6B4A] border border-[#FF6B4A]/30"
-                : "text-[#D8C9A3]/40 border border-[#D8C9A3]/10"
+                ? "bg-[#FFEB00] text-[#02381A] shadow-md shadow-[#FFEB00]/20"
+                : "text-[#FFFDF2]/40 bg-[#02381A]/40 border border-[#FFEB00]/15"
             }`}
           >
             <span
-              className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-semibold ${
+              className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-extrabold ${
                 i < currentStep
-                  ? "bg-[#FF6B4A] text-[#12181F]"
+                  ? "bg-[#FF007A] text-[#FFFDF2]"
                   : i === currentStep
-                  ? "bg-[#FF6B4A]/20 text-[#FF6B4A]"
-                  : "bg-[#D8C9A3]/10 text-[#D8C9A3]/40"
+                  ? "bg-[#055C2E] text-[#FFEB00]"
+                  : "bg-[#02381A] text-[#FFFDF2]/40"
               }`}
             >
               {i < currentStep ? "✓" : i + 1}
@@ -56,8 +55,8 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
           </div>
           {i < steps.length - 1 && (
             <div
-              className={`w-6 h-px transition-colors duration-300 ${
-                i < currentStep ? "bg-[#FF6B4A]/40" : "bg-[#D8C9A3]/15"
+              className={`w-6 h-0.5 transition-colors duration-300 ${
+                i < currentStep ? "bg-[#FFEB00]" : "bg-[#FFEB00]/20"
               }`}
             />
           )}
@@ -70,13 +69,12 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
 export default function Home() {
   const [format, setFormat] = useState<CardFormat>("boardingPass");
   const [passengers, setPassengers] = useState<Passenger[]>([emptyPassenger()]);
-  const [seat] = useState(generateSeat);
-  const [gate] = useState(() => GATES[Math.floor(Math.random() * GATES.length)]);
+  const [seat] = useState(() => generateSeat());
+  const [gate] = useState<string>(() => GATES[Math.floor(Math.random() * GATES.length)]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const builderNumber = seat.replace(/[A-Z]/g, "");
 
-  // Determine current step
   const hasPhoto = passengers.some((p) => p.photo !== null);
   const hasName = passengers[0]?.name.trim().length > 0;
   const currentStep = hasPhoto && hasName ? 2 : hasPhoto ? 1 : 0;
@@ -88,7 +86,7 @@ export default function Home() {
   }
 
   function addTeammate() {
-    setPassengers((prev) => (prev.length >= 5 ? prev : [...prev, emptyPassenger()]));
+    setPassengers((prev) => (prev.length >= 5 ? prev : [...prev, emptyPassenger(generateBuilderTitle(""))]));
   }
 
   function removePassenger(id: string) {
@@ -115,49 +113,58 @@ export default function Home() {
       : `${primaryName} is boarding for HH Goa 2026 ✈️ #FrameInGoa @247pmstudio`;
 
   return (
-    <main className="min-h-screen bg-[#12181F] text-[#F6EFE1] pb-16 relative overflow-hidden">
-      {/* Ambient background gradients */}
+    <main className="min-h-screen bg-[#055C2E] text-[#FFFDF2] pb-16 relative overflow-hidden">
+      {/* Background Palm & Sun Accents */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-[#FF6B4A]/[0.04] blur-3xl" />
-        <div className="absolute top-1/3 -right-20 w-60 h-60 rounded-full bg-[#1F8A70]/[0.05] blur-3xl" />
-        <div className="absolute bottom-20 left-1/4 w-40 h-40 rounded-full bg-[#D8C9A3]/[0.03] blur-3xl" />
+        <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-[#FFEB00]/[0.07] blur-3xl" />
+        <div className="absolute top-1/3 -right-20 w-80 h-80 rounded-full bg-[#FF007A]/[0.08] blur-3xl" />
+        <div className="absolute bottom-20 left-1/4 w-60 h-60 rounded-full bg-[#FF9900]/[0.06] blur-3xl" />
       </div>
 
       <div className="max-w-md mx-auto px-5 pt-8 flex flex-col gap-7 relative z-10">
-        {/* ─── Header ─── */}
+        {/* ─── Studio Top Bar ─── */}
+        <div className="flex items-center justify-between font-mono text-xs text-[#FFEB00] font-bold border-b border-[#FFEB00]/20 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#FF007A] animate-pulse" />
+            <span>2:47 PM STUDIO</span>
+          </div>
+          <span>GOA, INDIA · 28-31 OCT</span>
+        </div>
+
+        {/* ─── Brandkit Hero Header ─── */}
         <header className="text-center animate-fade-in-up">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#FF6B4A]/20 bg-[#FF6B4A]/5 mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B4A] animate-pulse" />
-            <span className="font-mono text-[10px] tracking-widest text-[#FF6B4A] uppercase">
-              Live · HH Goa 2026
+          <div className="relative inline-block mb-2">
+            <h1 className="font-serif text-4xl sm:text-5xl font-black text-[#FFEB00] tracking-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
+              HACKER HOUSE
+            </h1>
+            {/* Official Devanagari Goa Badge */}
+            <span className="goa-badge absolute -top-3 right-[-14px] text-lg">
+              गोवा
             </span>
           </div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight bg-gradient-to-r from-[#F6EFE1] via-[#D8C9A3] to-[#F6EFE1] bg-clip-text text-transparent animate-gradient">
-            Your boarding pass to Goa
-          </h1>
-          <p className="text-sm text-[#D8C9A3]/70 mt-2 font-mono">
-            Upload a photo, get a branded pass, share it in one tap.
+          <p className="text-xs font-mono text-[#FFFDF2]/80 mt-1 uppercase tracking-widest font-bold">
+            Official Builder ID & Boarding Pass Generator
           </p>
         </header>
 
         {/* ─── Step Indicator ─── */}
         <StepIndicator currentStep={currentStep} />
 
-        {/* ─── Format Toggle ─── */}
-        <div className="flex rounded-full border border-[#D8C9A3]/20 p-1 font-mono text-sm glass animate-fade-in-up stagger-2">
+        {/* ─── Format Signpost Toggle ─── */}
+        <div className="flex rounded-xl bg-[#02381A] p-1.5 border-2 border-[#FFEB00]/40 font-mono text-xs font-bold glass animate-fade-in-up stagger-2">
           {(
             [
-              ["boardingPass", "✈ Boarding pass"],
-              ["porthole", "◉ PFP frame"],
+              ["boardingPass", "✈ BOARDING PASS"],
+              ["porthole", "◉ PFP FRAME"],
             ] as const
           ).map(([value, label]) => (
             <button
               key={value}
               onClick={() => setFormat(value)}
-              className={`flex-1 rounded-full py-2.5 transition-all duration-300 text-xs tracking-wide ${
+              className={`flex-1 rounded-lg py-3 transition-all duration-300 tracking-wider font-extrabold ${
                 format === value
-                  ? "bg-[#FF6B4A] text-[#12181F] font-semibold shadow-lg shadow-[#FF6B4A]/20"
-                  : "text-[#D8C9A3] hover:text-[#F6EFE1]"
+                  ? "bg-[#FFEB00] text-[#02381A] shadow-md shadow-[#FFEB00]/30 border-2 border-[#02381A]"
+                  : "text-[#FFFDF2]/70 hover:text-[#FFEB00]"
               }`}
             >
               {label}
@@ -178,16 +185,16 @@ export default function Home() {
         {/* ─── Input Fields ─── */}
         <section className="flex flex-col gap-4 animate-fade-in-up stagger-4">
           {passengers.map((p, i) => (
-            <div key={p.id} className="flex flex-col gap-2.5">
+            <div key={p.id} className="flex flex-col gap-3 glass p-4 rounded-2xl border-2 border-[#FFEB00]/30">
               {passengers.length > 1 && (
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs text-[#D8C9A3]">
-                    Passenger {i + 1}
+                  <span className="font-mono text-xs font-bold text-[#FFEB00]">
+                    PASSENGER {i + 1}
                   </span>
                   {i > 0 && (
                     <button
                       onClick={() => removePassenger(p.id)}
-                      className="font-mono text-xs text-[#FF6B4A] hover:text-[#FF6B4A]/80 transition-colors"
+                      className="font-mono text-xs font-bold text-[#FF007A] hover:underline"
                     >
                       Remove
                     </button>
@@ -195,7 +202,7 @@ export default function Home() {
                 </div>
               )}
               <UploadZone
-                label={i === 0 ? "Your photo" : `Teammate ${i + 1} photo`}
+                label={i === 0 ? "Your Photo" : `Teammate ${i + 1} Photo`}
                 photoObjectUrl={p.photoObjectUrl}
                 onPhoto={(bitmap, objectUrl, faceCenter) =>
                   updatePassenger(p.id, { photo: bitmap, photoObjectUrl: objectUrl, faceCenter })
@@ -204,8 +211,8 @@ export default function Home() {
               <input
                 value={p.name}
                 onChange={(e) => updatePassenger(p.id, { name: e.target.value })}
-                placeholder="Name"
-                className="w-full rounded-xl bg-[#1B2430]/60 border border-[#D8C9A3]/15 px-4 py-2.5 text-sm font-mono placeholder:text-[#D8C9A3]/30 focus:outline-none focus:border-[#FF6B4A]/60 focus:bg-[#1B2430]/80 transition-all duration-200"
+                placeholder="Full Name"
+                className="w-full rounded-xl bg-[#02381A]/80 border-2 border-[#FFEB00]/25 px-4 py-3 text-sm font-mono text-[#FFFDF2] placeholder:text-[#FFFDF2]/40 focus:outline-none focus:border-[#FFEB00] transition-all"
               />
               {i === 0 && (
                 <>
@@ -214,12 +221,12 @@ export default function Home() {
                     onChange={(e) =>
                       updatePassenger(p.id, { stackOrRole: e.target.value })
                     }
-                    placeholder="Stack / role (e.g. ML systems)"
-                    className="w-full rounded-xl bg-[#1B2430]/60 border border-[#D8C9A3]/15 px-4 py-2.5 text-sm font-mono placeholder:text-[#D8C9A3]/30 focus:outline-none focus:border-[#FF6B4A]/60 focus:bg-[#1B2430]/80 transition-all duration-200"
+                    placeholder="Stack / Role (e.g. ML systems)"
+                    className="w-full rounded-xl bg-[#02381A]/80 border-2 border-[#FFEB00]/25 px-4 py-3 text-sm font-mono text-[#FFFDF2] placeholder:text-[#FFFDF2]/40 focus:outline-none focus:border-[#FFEB00] transition-all"
                   />
-                  <div className="flex items-center justify-between rounded-xl border border-[#D8C9A3]/15 px-4 py-2.5 bg-[#1B2430]/40">
-                    <span className="font-mono text-xs text-[#D8C9A3]">
-                      Class: <span className="text-[#F6EFE1] font-medium">{p.builderTitle}</span>
+                  <div className="flex items-center justify-between rounded-xl border-2 border-[#FFEB00]/25 px-4 py-3 bg-[#02381A]/60">
+                    <span className="font-mono text-xs text-[#FFFDF2]/80">
+                      Class: <span suppressHydrationWarning className="text-[#FFEB00] font-bold">{p.builderTitle}</span>
                     </span>
                     <button
                       onClick={() =>
@@ -227,13 +234,13 @@ export default function Home() {
                           builderTitle: rerollBuilderTitle(p.stackOrRole, p.builderTitle),
                         })
                       }
-                      className="font-mono text-xs text-[#FF6B4A] hover:text-[#FF6B4A]/80 transition-colors flex items-center gap-1"
+                      className="font-mono text-xs font-extrabold text-[#FF007A] hover:text-[#FFEB00] transition-colors flex items-center gap-1.5"
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="23 4 23 10 17 10" />
                         <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                       </svg>
-                      Reroll
+                      REROLL
                     </button>
                   </div>
                 </>
@@ -244,9 +251,9 @@ export default function Home() {
           {format === "boardingPass" && passengers.length < 5 && (
             <button
               onClick={addTeammate}
-              className="font-mono text-xs text-[#D8C9A3]/60 border border-dashed border-[#D8C9A3]/20 rounded-xl py-2.5 hover:border-[#D8C9A3]/40 hover:text-[#D8C9A3] hover:bg-[#1B2430]/30 transition-all duration-200"
+              className="font-mono text-xs font-bold text-[#FFEB00] border-2 border-dashed border-[#FFEB00]/40 rounded-xl py-3 hover:border-[#FFEB00] hover:bg-[#02381A]/50 transition-all"
             >
-              + Add a teammate to the manifest
+              + ADD TEAMMATE TO MANIFEST
             </button>
           )}
         </section>
@@ -262,9 +269,12 @@ export default function Home() {
         </div>
 
         {/* ─── Footer ─── */}
-        <footer className="text-center pt-4 pb-2 border-t border-[#D8C9A3]/8">
-          <p className="font-mono text-[10px] text-[#D8C9A3]/30 tracking-widest uppercase">
-            Built for HH Goa 2026 · #FrameInGoa
+        <footer className="text-center pt-6 pb-2 border-t border-[#FFEB00]/20 flex flex-col gap-1 items-center">
+          <p className="font-mono text-xs font-bold text-[#FFEB00] tracking-widest uppercase">
+            HH-GOA 2026 · 2:47 PM STUDIO
+          </p>
+          <p className="font-mono text-[10px] text-[#FFFDF2]/50 tracking-wider">
+            #FrameInGoa · Official Shortlisting Task
           </p>
         </footer>
       </div>
