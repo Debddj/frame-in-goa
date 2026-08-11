@@ -40,6 +40,22 @@ body {
 }
 
 /* ================================================================
+   Hide Next.js Dev Indicator completely
+   ================================================================ */
+
+[data-nextjs-toast],
+next-route-announcer,
+#next-dev-indicator,
+[data-next-dev-indicator],
+div:has(> button[aria-label*="Next.js"]),
+button[aria-label*="Next.js"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ================================================================
    Tropical Noise Overlay
    ================================================================ */
 

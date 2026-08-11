@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Vercel Blob requires the external host for next/image in the share page
+  devIndicators: false,
   images: {
     remotePatterns: [
       {

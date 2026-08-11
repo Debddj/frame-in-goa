@@ -4,6 +4,9 @@ import { useMemo, useRef, useState } from "react";
 import UploadZone from "@/components/UploadZone";
 import CardPreview from "@/components/CardPreview";
 import ShareActions from "@/components/ShareActions";
+import { PalmTreesLeft, PalmTreesRight } from "@/components/PalmTreesBg";
+import { BeachSignpost } from "@/components/BeachSignpost";
+import { RightFlankPanel } from "@/components/RightFlankPanel";
 import { generateBuilderTitle, rerollBuilderTitle } from "@/lib/builder-titles";
 import { generateSeat, FLIGHT_CODE } from "@/lib/ids";
 import { GATES } from "@/lib/types";
@@ -113,15 +116,20 @@ export default function Home() {
       : `${primaryName} is boarding for HH Goa 2026 ✈️ #FrameInGoa @247pmstudio`;
 
   return (
-    <main className="min-h-screen bg-[#055C2E] text-[#FFFDF2] pb-16 relative overflow-hidden">
-      {/* Background Palm & Sun Accents */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-[#FFEB00]/[0.07] blur-3xl" />
-        <div className="absolute top-1/3 -right-20 w-80 h-80 rounded-full bg-[#FF007A]/[0.08] blur-3xl" />
-        <div className="absolute bottom-20 left-1/4 w-60 h-60 rounded-full bg-[#FF9900]/[0.06] blur-3xl" />
+    <main className="min-h-screen bg-[#055C2E] text-[#FFFDF2] pb-16 relative overflow-x-hidden">
+      {/* Background Palm Trees & Beach Accents */}
+      <PalmTreesLeft />
+      <PalmTreesRight />
+      <BeachSignpost />
+      <RightFlankPanel />
+
+      {/* Ambient Radial Sun Glow */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-[#FFEB00]/[0.06] blur-3xl" />
+        <div className="absolute top-1/3 left-1/4 w-80 h-80 rounded-full bg-[#FF007A]/[0.07] blur-3xl" />
       </div>
 
-      <div className="max-w-md mx-auto px-5 pt-8 flex flex-col gap-7 relative z-10">
+      <div className="max-w-xl mx-auto px-5 pt-8 flex flex-col gap-7 relative z-20">
         {/* ─── Studio Top Bar ─── */}
         <div className="flex items-center justify-between font-mono text-xs text-[#FFEB00] font-bold border-b border-[#FFEB00]/20 pb-3">
           <div className="flex items-center gap-2">
@@ -142,7 +150,7 @@ export default function Home() {
               गोवा
             </span>
           </div>
-          <p className="text-xs font-mono text-[#FFFDF2]/80 mt-1 uppercase tracking-widest font-bold">
+          <p className="text-xs font-mono text-[#FFFDF2]/90 mt-1 uppercase tracking-widest font-bold">
             Official Builder ID & Boarding Pass Generator
           </p>
         </header>
@@ -185,7 +193,7 @@ export default function Home() {
         {/* ─── Input Fields ─── */}
         <section className="flex flex-col gap-4 animate-fade-in-up stagger-4">
           {passengers.map((p, i) => (
-            <div key={p.id} className="flex flex-col gap-3 glass p-4 rounded-2xl border-2 border-[#FFEB00]/30">
+            <div key={p.id} className="flex flex-col gap-3 glass p-4.5 rounded-2xl border-2 border-[#FFEB00]/30">
               {passengers.length > 1 && (
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-xs font-bold text-[#FFEB00]">
@@ -268,11 +276,17 @@ export default function Home() {
           />
         </div>
 
-        {/* ─── Footer ─── */}
-        <footer className="text-center pt-6 pb-2 border-t border-[#FFEB00]/20 flex flex-col gap-1 items-center">
+        {/* ─── Mobile Footer / Social Links ─── */}
+        <footer className="text-center pt-6 pb-2 border-t border-[#FFEB00]/20 flex flex-col gap-2 items-center">
           <p className="font-mono text-xs font-bold text-[#FFEB00] tracking-widest uppercase">
             HH-GOA 2026 · 2:47 PM STUDIO
           </p>
+
+          <div className="lg:hidden flex gap-4 text-xs font-mono font-bold text-[#FFEB00] my-1">
+            <a href="https://x.com/247pmstudio" target="_blank" rel="noreferrer">𝕏 @247PMSTUDIO</a>
+            <a href="https://t.me/twofourtysevenpm" target="_blank" rel="noreferrer">✈ TELEGRAM</a>
+          </div>
+
           <p className="font-mono text-[10px] text-[#FFFDF2]/50 tracking-wider">
             #FrameInGoa · Official Shortlisting Task
           </p>
