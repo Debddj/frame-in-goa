@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { PalettePreviewStrip } from "./PalettePreviewStrip";
+import { ANIME_PRESETS, loadPresetMascot, type AnimePreset } from "@/lib/anime-presets";
 import type { StickerPreset, ThemePreset } from "@/lib/types";
 
 interface Props {
@@ -61,6 +62,24 @@ export function CustomizerPanel({
     { id: "palm", label: "🌴 Goa Chill" },
   ];
 
+  const handlePresetSelect = useCallback(
+    async (preset: AnimePreset) => {
+      setBusy(true);
+      try {
+        const { bitmap, objectUrl } = await loadPresetMascot(preset.svg);
+        onCharacterPhoto(bitmap, objectUrl);
+        if (onCoPilotSpeechChange) {
+          onCoPilotSpeechChange(preset.defaultSpeech);
+        }
+      } catch {
+        // error handling
+      } finally {
+        setBusy(false);
+      }
+    },
+    [onCharacterPhoto, onCoPilotSpeechChange]
+  );
+
   return (
     <div className="flex flex-col gap-5 glass p-5 rounded-2xl border-2 border-[#FFEB00]/40 shadow-xl">
       <div className="flex items-center justify-between border-b border-[#FFEB00]/20 pb-3 font-mono">
@@ -78,10 +97,11 @@ export function CustomizerPanel({
         photo={passengerPhoto}
       />
 
-      {/* 🎭 Anime / Character Mascot Companion Upload */}
+      {/* 🎭 Anime / Character Mascot Companion Upload & Preset Gallery */}
       <div className="flex flex-col gap-2 font-mono">
-        <label className="text-xs font-bold text-[#FFFDF2]/90">
-          2. ANIME / CHARACTER MASCOT CO-PILOT (OPTIONAL)
+        <label className="text-xs font-bold text-[#FFFDF2]/90 flex items-center justify-between">
+          <span>2. ANIME / CHARACTER MASCOT CO-PILOT</span>
+          <span className="text-[10px] text-[#FFEB00] font-semibold">1-Click Gallery or Upload</span>
         </label>
         <input
           ref={fileInputRef}
@@ -111,7 +131,7 @@ export function CustomizerPanel({
                   onClick={() => onCharacterPhoto(null, null)}
                   className="text-xs font-bold text-[#FF007A] hover:underline px-2"
                 >
-                  Remove
+                  Remove / Change
                 </button>
               </div>
 
@@ -127,13 +147,46 @@ export function CustomizerPanel({
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#FFEB00]/50 rounded-xl p-3 bg-[#02381A]/30 hover:border-[#FFEB00] hover:bg-[#02381A]/60 font-mono text-xs font-bold text-[#FFEB00] transition-all"
-            >
-              <span>{busy ? "Reading mascot image…" : "🖼 Upload Anime / Character / Mascot PNG"}</span>
-            </button>
+            <div className="flex flex-col gap-2.5">
+              <div className="text-[11px] text-[#FFEB00] font-bold">INSTANT ANIME & CO-PILOT GALLERY (1-CLICK):</div>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {ANIME_PRESETS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handlePresetSelect(p)}
+                    disabled={busy}
+                    className="flex flex-col items-center gap-1.5 p-2 rounded-xl border border-[#FFEB00]/30 bg-[#02381A]/60 hover:border-[#FFEB00] hover:bg-[#02381A] hover:scale-[1.04] transition-all group"
+                  >
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-[#FFEB00]/40 group-hover:border-[#FFEB00]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`data:image/svg+xml;utf8,${encodeURIComponent(p.svg)}`}
+                        alt={p.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <span className="text-[10px] font-bold text-[#FFFDF2]/80 group-hover:text-[#FFEB00] truncate w-full text-center">
+                      {p.name.split(" ")[0]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 my-0.5">
+                <div className="flex-1 h-px bg-[#FFEB00]/20" />
+                <span className="text-[9px] font-bold text-[#FFFDF2]/40 uppercase">or upload your own file</span>
+                <div className="flex-1 h-px bg-[#FFEB00]/20" />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#FFEB00]/50 rounded-xl p-2.5 bg-[#02381A]/30 hover:border-[#FFEB00] hover:bg-[#02381A]/60 font-mono text-xs font-bold text-[#FFEB00] transition-all"
+              >
+                <span>{busy ? "Loading mascot image…" : "📁 Upload Custom Anime / Mascot Image"}</span>
+              </button>
+            </div>
           )}
         </div>
       </div>
