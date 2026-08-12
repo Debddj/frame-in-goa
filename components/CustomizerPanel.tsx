@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { PalettePreviewStrip } from "./PalettePreviewStrip";
 import type { StickerPreset, ThemePreset } from "@/lib/types";
 
 interface Props {
@@ -12,6 +13,9 @@ interface Props {
   onCharacterPhoto: (bitmap: ImageBitmap | null, url: string | null) => void;
   customMotto: string;
   onMottoChange: (motto: string) => void;
+  coPilotSpeech?: string;
+  onCoPilotSpeechChange?: (speech: string) => void;
+  passengerPhoto?: ImageBitmap | null;
 }
 
 export function CustomizerPanel({
@@ -23,6 +27,9 @@ export function CustomizerPanel({
   onCharacterPhoto,
   customMotto,
   onMottoChange,
+  coPilotSpeech = "Ready for takeoff! 🚀",
+  onCoPilotSpeechChange,
+  passengerPhoto,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -43,12 +50,7 @@ export function CustomizerPanel({
     [onCharacterPhoto]
   );
 
-  const themeOptions: Array<{ id: ThemePreset; name: string; bg: string; accent: string }> = [
-    { id: "palmEmerald", name: "Palm Emerald", bg: "#055C2E", accent: "#FFEB00" },
-    { id: "sunsetVaporwave", name: "Sunset Vaporwave", bg: "#2A0845", accent: "#FF007A" },
-    { id: "cyberMidnight", name: "Cyber Midnight", bg: "#0D1117", accent: "#39FF14" },
-    { id: "vintageTicket", name: "Vintage Ticket", bg: "#3B2F2F", accent: "#D4A373" },
-  ];
+
 
   const stickerOptions: Array<{ id: StickerPreset; label: string }> = [
     { id: "none", label: "None" },
@@ -69,31 +71,12 @@ export function CustomizerPanel({
         <span className="text-[10px] text-[#FFFDF2]/60 uppercase font-bold">Total Freedom</span>
       </div>
 
-      {/* 🎨 Theme Palettes */}
-      <div className="flex flex-col gap-2 font-mono">
-        <label className="text-xs font-bold text-[#FFFDF2]/90">1. PASS COLOR PALETTE</label>
-        <div className="grid grid-cols-2 gap-2.5">
-          {themeOptions.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => onSelectTheme(t.id)}
-              className={`flex items-center gap-3 p-2.5 rounded-xl border-2 transition-all text-xs font-bold text-left ${
-                themePreset === t.id
-                  ? "border-[#FFEB00] bg-[#02381A] shadow-md shadow-[#FFEB00]/30"
-                  : "border-[#FFEB00]/20 bg-[#02381A]/40 hover:border-[#FFEB00]/60"
-              }`}
-            >
-              <div
-                className="w-6 h-6 rounded-full border-2 border-white flex-shrink-0 flex items-center justify-center"
-                style={{ backgroundColor: t.bg }}
-              >
-                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: t.accent }} />
-              </div>
-              <span className="truncate">{t.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* 🎨 Live Theme Palette Previews */}
+      <PalettePreviewStrip
+        themePreset={themePreset}
+        onSelectTheme={onSelectTheme}
+        photo={passengerPhoto}
+      />
 
       {/* 🎭 Anime / Character Mascot Companion Upload */}
       <div className="flex flex-col gap-2 font-mono">
@@ -111,24 +94,37 @@ export function CustomizerPanel({
           }}
         />
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3">
           {characterPhotoUrl ? (
-            <div className="flex items-center gap-3 w-full bg-[#02381A]/60 border-2 border-[#FFEB00]/40 p-2.5 rounded-xl">
-              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#FF007A] flex-shrink-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={characterPhotoUrl} alt="Character Mascot" className="w-full h-full object-cover" />
+            <div className="flex flex-col gap-2.5 w-full bg-[#02381A]/60 border-2 border-[#FFEB00]/40 p-3 rounded-xl font-mono text-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#FF007A] flex-shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={characterPhotoUrl} alt="Character Mascot" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 min-w-0 font-mono text-xs">
+                  <div className="text-[#FFEB00] font-bold truncate">Co-Pilot Mascot Attached ✓</div>
+                  <div className="text-[10px] text-[#FFFDF2]/60">Airplane Window Viewport & Speech Bubble</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onCharacterPhoto(null, null)}
+                  className="text-xs font-bold text-[#FF007A] hover:underline px-2"
+                >
+                  Remove
+                </button>
               </div>
-              <div className="flex-1 min-w-0 font-mono text-xs">
-                <div className="text-[#FFEB00] font-bold truncate">Co-Pilot Mascot Attached ✓</div>
-                <div className="text-[10px] text-[#FFFDF2]/60">Appears on Pass & Frame</div>
+
+              {/* Co-pilot speech input */}
+              <div className="flex flex-col gap-1 pt-1 border-t border-[#FFEB00]/15">
+                <label className="text-[10px] font-bold text-[#FFEB00]">CO-PILOT SPEECH BUBBLE:</label>
+                <input
+                  value={coPilotSpeech}
+                  onChange={(e) => onCoPilotSpeechChange?.(e.target.value)}
+                  placeholder="e.g. Ready for takeoff! 🚀"
+                  className="w-full rounded-lg bg-[#02381A] border border-[#FFEB00]/30 px-3 py-1.5 text-xs text-[#FFFDF2] placeholder:text-[#FFFDF2]/40 focus:outline-none focus:border-[#FFEB00]"
+                />
               </div>
-              <button
-                type="button"
-                onClick={() => onCharacterPhoto(null, null)}
-                className="text-xs font-bold text-[#FF007A] hover:underline px-2"
-              >
-                Remove
-              </button>
             </div>
           ) : (
             <button

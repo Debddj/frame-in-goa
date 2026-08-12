@@ -117,6 +117,7 @@ export function useCanvasWorker(
                 ? await cloneForTransfer(p.characterPhoto)
                 : undefined,
               customMotto: p.customMotto,
+              coPilotSpeech: p.coPilotSpeech,
             }))
           );
 

@@ -293,6 +293,11 @@ export default function Home() {
             onMottoChange={(motto) =>
               updatePassenger(passengers[0].id, { customMotto: motto })
             }
+            coPilotSpeech={passengers[0]?.coPilotSpeech ?? "Ready for takeoff! 🚀"}
+            onCoPilotSpeechChange={(speech) =>
+              updatePassenger(passengers[0].id, { coPilotSpeech: speech })
+            }
+            passengerPhoto={passengers[0]?.photo}
           />
         </div>
 

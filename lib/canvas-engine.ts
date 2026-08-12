@@ -217,6 +217,123 @@ function drawStickerBadge(
   ctx.restore();
 }
 
+/** Draws thematic airplane-window viewport for mascot co-pilot + speech bubble */
+function drawCoPilotWindow(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  bitmap: ImageBitmap,
+  speechText: string,
+  pal: ThemeColors
+) {
+  ctx.save();
+
+  // 1. Speech bubble pointing from window to the left
+  if (speechText) {
+    ctx.save();
+    const bubbleW = 160;
+    const bubbleH = 44;
+    const bubbleX = x - bubbleW - 14;
+    const bubbleY = y + 15;
+
+    roundRectPath(ctx, bubbleX, bubbleY, bubbleW, bubbleH, 12);
+    ctx.fillStyle = pal.cardStock;
+    ctx.fill();
+    ctx.strokeStyle = pal.navy;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Pointer tail
+    ctx.beginPath();
+    ctx.moveTo(bubbleX + bubbleW, bubbleY + 16);
+    ctx.lineTo(bubbleX + bubbleW + 12, bubbleY + 22);
+    ctx.lineTo(bubbleX + bubbleW, bubbleY + 28);
+    ctx.closePath();
+    ctx.fillStyle = pal.cardStock;
+    ctx.fill();
+    ctx.strokeStyle = pal.navy;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.fillStyle = pal.navy;
+    ctx.font = `700 13px ${theme.font.mono}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    wrapOrFit(ctx, speechText, bubbleX + bubbleW / 2, bubbleY + bubbleH / 2, bubbleW - 16, 13);
+    ctx.restore();
+  }
+
+  // 2. Airplane Window Frame (Rounded Rect Bezel + Rivets)
+  const r = 26;
+  roundRectPath(ctx, x - 5, y - 5, w + 10, h + 10, r + 4);
+  ctx.fillStyle = pal.navy;
+  ctx.fill();
+
+  roundRectPath(ctx, x, y, w, h, r);
+  ctx.fillStyle = pal.accentYellow;
+  ctx.fill();
+  ctx.strokeStyle = pal.accentMagenta;
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  // Corner rivets
+  const roff = 10;
+  const rivets = [
+    [x + roff, y + roff],
+    [x + w - roff, y + roff],
+    [x + roff, y + h - roff],
+    [x + w - roff, y + h - roff],
+  ];
+  rivets.forEach(([rx, ry]) => {
+    ctx.beginPath();
+    ctx.arc(rx, ry, 3, 0, Math.PI * 2);
+    ctx.fillStyle = pal.navy;
+    ctx.fill();
+  });
+
+  // Inner Window Glass Viewport (Clipped Mascot Photo)
+  const pad = 10;
+  const ix = x + pad;
+  const iy = y + pad;
+  const iw = w - pad * 2;
+  const ih = h - pad * 2 - 18;
+  const ir = r - 6;
+
+  ctx.save();
+  roundRectPath(ctx, ix, iy, iw, ih, ir);
+  ctx.clip();
+  drawCropped(ctx as CanvasRenderingContext2D, bitmap, ix, iy, iw, ih);
+  ctx.restore();
+
+  roundRectPath(ctx, ix, iy, iw, ih, ir);
+  ctx.strokeStyle = pal.navy;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // 3. Bottom Stamped Badge "CO-PILOT ✈️"
+  const bw = w - 20;
+  const bh = 22;
+  const bx = x + 10;
+  const by = y + h - 22;
+
+  roundRectPath(ctx, bx, by, bw, bh, 6);
+  ctx.fillStyle = pal.accentMagenta;
+  ctx.fill();
+  ctx.strokeStyle = pal.navy;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = `800 11px ${theme.font.mono}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("CO-PILOT ✈️", bx + bw / 2, by + bh / 2 + 1);
+
+  ctx.restore();
+}
+
 async function qrToImageBitmap(payload: string, size: number, darkColor: string = T.navy): Promise<ImageBitmap> {
   const dataUrl = await QRCode.toDataURL(payload, {
     margin: 0,
@@ -437,27 +554,18 @@ export async function drawBoardingPass(
 
   // Draw Sticker Badge if selected
   if (data.stickerPreset && data.stickerPreset !== "none") {
-    drawStickerBadge(ctx, contentX + contentW - 100, cardY + headerH + 45, data.stickerPreset, pal.accentYellow);
+    drawStickerBadge(ctx, contentX + contentW - 110, cardY + headerH + 20, data.stickerPreset, pal.accentYellow);
   }
 
-  // Draw Character Mascot Companion Avatar if uploaded!
+  // Draw Integrated Airplane-Window Co-Pilot Mascot if uploaded!
   if (p0?.characterPhoto) {
-    const mascotR = 55;
-    const mascotCx = contentX + contentW - 65;
-    const mascotCy = cardY + headerH + 115;
+    const winW = 130;
+    const winH = 150;
+    const winX = contentX + contentW - winW - 10;
+    const winY = cardY + headerH + 45;
+    const speech = p0.coPilotSpeech || "Ready for takeoff! 🚀";
 
-    drawCircularPhoto(ctx, p0.characterPhoto, mascotCx, mascotCy, mascotR);
-    ctx.strokeStyle = pal.accentMagenta;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(mascotCx, mascotCy, mascotR + 2, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Mascot Label
-    ctx.fillStyle = pal.navy;
-    ctx.font = `800 12px ${theme.font.mono}`;
-    ctx.textAlign = "center";
-    ctx.fillText("CO-PILOT", mascotCx, mascotCy + mascotR + 18);
+    drawCoPilotWindow(ctx, winX, winY, winW, winH, p0.characterPhoto, speech, pal);
   }
 
   // --- Signpost Field Badges (SEAT / GATE / CLASS) -------------------------
@@ -636,8 +744,8 @@ function drawTeamBody(
 ) {
   const shown = passengers.slice(0, 4);
   const overflow = passengers.length - shown.length;
-  const rowY = cardY + headerH + 50;
-  const thumbR = 50;
+  const rowY = cardY + headerH + 54;
+  const thumbR = 54;
   const gap = (contentW - shown.length * thumbR * 2) / Math.max(shown.length - 1, 1);
 
   shown.forEach((p, i) => {
@@ -652,21 +760,27 @@ function drawTeamBody(
     ctx.fillStyle = pal.navy;
     ctx.font = `700 18px ${theme.font.display}`;
     ctx.textAlign = "center";
-    const firstName = (p.name || "Builder").split(" ")[0];
-    ctx.fillText(firstName, cx, rowY + thumbR + 30);
+    const firstName = (p.name || `Builder ${i + 1}`).split(" ")[0];
+    ctx.fillText(firstName, cx, rowY + thumbR + 26);
+
+    if (p.stackOrRole) {
+      ctx.fillStyle = pal.accentMagenta;
+      ctx.font = `600 13px ${theme.font.mono}`;
+      wrapOrFit(ctx, p.stackOrRole, cx, rowY + thumbR + 46, thumbR * 2 + 10, 13);
+    }
   });
 
   if (overflow > 0) {
     ctx.fillStyle = pal.accentMagenta;
     ctx.font = `700 18px ${theme.font.mono}`;
     ctx.textAlign = "left";
-    ctx.fillText(`+${overflow} more`, contentX + contentW - 110, rowY + thumbR + 30);
+    ctx.fillText(`+${overflow} more`, contentX + contentW - 110, rowY + thumbR + 26);
   }
 
   ctx.textAlign = "left";
   ctx.fillStyle = pal.navy;
-  ctx.font = `700 38px ${theme.font.display}`;
-  ctx.fillText("Team Builder Crew", contentX, rowY + thumbR + 90);
+  ctx.font = `700 36px ${theme.font.display}`;
+  ctx.fillText("Team Builder Crew 🚀", contentX, rowY + thumbR + 90);
 }
 
 function wrapOrFit(

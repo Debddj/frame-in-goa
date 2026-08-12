@@ -14,6 +14,7 @@ export interface Passenger {
   characterPhoto?: ImageBitmap | null;
   characterPhotoUrl?: string | null;
   customMotto?: string;
+  coPilotSpeech?: string;
 }
 
 export type CardFormat = "porthole" | "boardingPass";

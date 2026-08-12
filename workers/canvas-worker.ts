@@ -28,6 +28,7 @@ export interface RenderRequest {
       faceCenter?: FaceCenter | null;
       characterPhoto?: ImageBitmap;
       customMotto?: string;
+      coPilotSpeech?: string;
     }>;
     seat: string;
     gate: string;
@@ -220,6 +221,116 @@ function drawStickerBadgeWorker(
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(item.text, 0, 1);
+
+  ctx.restore();
+}
+
+function drawCoPilotWindow(
+  ctx: OffscreenCanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  bitmap: ImageBitmap,
+  speechText: string,
+  pal: (typeof themePalettes)[keyof typeof themePalettes]
+) {
+  ctx.save();
+
+  if (speechText) {
+    ctx.save();
+    const bubbleW = 160;
+    const bubbleH = 44;
+    const bubbleX = x - bubbleW - 14;
+    const bubbleY = y + 15;
+
+    roundRectPath(ctx, bubbleX, bubbleY, bubbleW, bubbleH, 12);
+    ctx.fillStyle = pal.cardStock;
+    ctx.fill();
+    ctx.strokeStyle = pal.navy;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(bubbleX + bubbleW, bubbleY + 16);
+    ctx.lineTo(bubbleX + bubbleW + 12, bubbleY + 22);
+    ctx.lineTo(bubbleX + bubbleW, bubbleY + 28);
+    ctx.closePath();
+    ctx.fillStyle = pal.cardStock;
+    ctx.fill();
+    ctx.strokeStyle = pal.navy;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.fillStyle = pal.navy;
+    ctx.font = `700 13px ${theme.font.mono}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    wrapOrFit(ctx, speechText, bubbleX + bubbleW / 2, bubbleY + bubbleH / 2, bubbleW - 16, 13);
+    ctx.restore();
+  }
+
+  const r = 26;
+  roundRectPath(ctx, x - 5, y - 5, w + 10, h + 10, r + 4);
+  ctx.fillStyle = pal.navy;
+  ctx.fill();
+
+  roundRectPath(ctx, x, y, w, h, r);
+  ctx.fillStyle = pal.accentYellow;
+  ctx.fill();
+  ctx.strokeStyle = pal.accentMagenta;
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  const roff = 10;
+  const rivets = [
+    [x + roff, y + roff],
+    [x + w - roff, y + roff],
+    [x + roff, y + h - roff],
+    [x + w - roff, y + h - roff],
+  ];
+  rivets.forEach(([rx, ry]) => {
+    ctx.beginPath();
+    ctx.arc(rx, ry, 3, 0, Math.PI * 2);
+    ctx.fillStyle = pal.navy;
+    ctx.fill();
+  });
+
+  const pad = 10;
+  const ix = x + pad;
+  const iy = y + pad;
+  const iw = w - pad * 2;
+  const ih = h - pad * 2 - 18;
+  const ir = r - 6;
+
+  ctx.save();
+  roundRectPath(ctx, ix, iy, iw, ih, ir);
+  ctx.clip();
+  drawCropped(ctx, bitmap, ix, iy, iw, ih);
+  ctx.restore();
+
+  roundRectPath(ctx, ix, iy, iw, ih, ir);
+  ctx.strokeStyle = pal.navy;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  const bw = w - 20;
+  const bh = 22;
+  const bx = x + 10;
+  const by = y + h - 22;
+
+  roundRectPath(ctx, bx, by, bw, bh, 6);
+  ctx.fillStyle = pal.accentMagenta;
+  ctx.fill();
+  ctx.strokeStyle = pal.navy;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = `800 11px ${theme.font.mono}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("CO-PILOT ✈️", bx + bw / 2, by + bh / 2 + 1);
 
   ctx.restore();
 }
@@ -462,8 +573,8 @@ function renderBoardingPass(
   } else {
     const shown = data.passengers.slice(0, 4);
     const overflow = data.passengers.length - shown.length;
-    const rowY = cardY + headerH + 50;
-    const thumbR = 50;
+    const rowY = cardY + headerH + 54;
+    const thumbR = 54;
     const gap = (contentW - shown.length * thumbR * 2) / Math.max(shown.length - 1, 1);
     shown.forEach((p, i) => {
       const pcx = contentX + thumbR + i * (thumbR * 2 + gap);
@@ -473,41 +584,43 @@ function renderBoardingPass(
       ctx.beginPath();
       ctx.arc(pcx, rowY, thumbR + 3, 0, Math.PI * 2);
       ctx.stroke();
+
       ctx.fillStyle = pal.navy;
       ctx.font = `700 18px ${theme.font.display}`;
       ctx.textAlign = "center";
-      ctx.fillText((p.name || "Builder").split(" ")[0], pcx, rowY + thumbR + 30);
+      const firstName = (p.name || `Builder ${i + 1}`).split(" ")[0];
+      ctx.fillText(firstName, pcx, rowY + thumbR + 26);
+
+      if (p.stackOrRole) {
+        ctx.fillStyle = pal.accentMagenta;
+        ctx.font = `600 13px ${theme.font.mono}`;
+        wrapOrFit(ctx, p.stackOrRole, pcx, rowY + thumbR + 46, thumbR * 2 + 10, 13);
+      }
     });
     if (overflow > 0) {
       ctx.fillStyle = pal.accentMagenta;
       ctx.font = `700 18px ${theme.font.mono}`;
       ctx.textAlign = "left";
-      ctx.fillText(`+${overflow} more`, contentX + contentW - 110, rowY + thumbR + 30);
+      ctx.fillText(`+${overflow} more`, contentX + contentW - 110, rowY + thumbR + 26);
     }
     ctx.textAlign = "left";
     ctx.fillStyle = pal.navy;
-    ctx.font = `700 38px ${theme.font.display}`;
-    ctx.fillText("Team Builder Crew", contentX, rowY + thumbR + 90);
+    ctx.font = `700 36px ${theme.font.display}`;
+    ctx.fillText("Team Builder Crew 🚀", contentX, rowY + thumbR + 90);
   }
 
   if (data.stickerPreset && data.stickerPreset !== "none") {
-    drawStickerBadgeWorker(ctx, contentX + contentW - 100, cardY + headerH + 45, data.stickerPreset, pal.accentYellow);
+    drawStickerBadgeWorker(ctx, contentX + contentW - 110, cardY + headerH + 20, data.stickerPreset, pal.accentYellow);
   }
 
   if (p0?.characterPhoto) {
-    const mascotR = 55;
-    const mascotCx = contentX + contentW - 65;
-    const mascotCy = cardY + headerH + 115;
-    drawCircularPhoto(ctx, p0.characterPhoto, mascotCx, mascotCy, mascotR);
-    ctx.strokeStyle = pal.accentMagenta;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(mascotCx, mascotCy, mascotR + 2, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.fillStyle = pal.navy;
-    ctx.font = `800 12px ${theme.font.mono}`;
-    ctx.textAlign = "center";
-    ctx.fillText("CO-PILOT", mascotCx, mascotCy + mascotR + 18);
+    const winW = 130;
+    const winH = 150;
+    const winX = contentX + contentW - winW - 10;
+    const winY = cardY + headerH + 45;
+    const speech = p0.coPilotSpeech || "Ready for takeoff! 🚀";
+
+    drawCoPilotWindow(ctx, winX, winY, winW, winH, p0.characterPhoto, speech, pal);
   }
 
   const fieldY = cardY + cardH - 195;
