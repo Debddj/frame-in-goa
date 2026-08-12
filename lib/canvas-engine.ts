@@ -1,9 +1,9 @@
 import QRCode from "qrcode";
-import { theme } from "./theme";
+import { theme, themePalettes, type ThemeColors } from "./theme";
 import { getCropStrategy } from "./smart-crop";
 import { applyNoiseOverlay } from "./noise-texture";
 import type { FaceCenter } from "./face-detector";
-import type { BoardingPassData, Passenger } from "./types";
+import type { BoardingPassData, Passenger, StickerPreset, ThemePreset } from "./types";
 
 const T = theme.color;
 
@@ -57,7 +57,8 @@ function drawCircularPhoto(
   cx: number,
   cy: number,
   radius: number,
-  faceCenter?: FaceCenter | null
+  faceCenter?: FaceCenter | null,
+  fallbackBg = "#E5D9B6"
 ) {
   ctx.save();
   ctx.beginPath();
@@ -66,7 +67,7 @@ function drawCircularPhoto(
   if (bitmap) {
     drawCropped(ctx, bitmap, cx - radius, cy - radius, radius * 2, radius * 2, faceCenter);
   } else {
-    ctx.fillStyle = "#E5D9B6";
+    ctx.fillStyle = fallbackBg;
     ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
   }
   ctx.restore();
@@ -77,7 +78,8 @@ function drawPerforation(
   ctx: CanvasRenderingContext2D,
   x: number,
   yTop: number,
-  yBottom: number
+  yBottom: number,
+  bgColor: string
 ) {
   ctx.save();
   ctx.strokeStyle = T.sand;
@@ -90,7 +92,7 @@ function drawPerforation(
   ctx.restore();
 
   ctx.save();
-  ctx.fillStyle = T.emerald;
+  ctx.fillStyle = bgColor;
   ctx.beginPath();
   ctx.arc(x, yTop, 16, 0, Math.PI * 2);
   ctx.fill();
@@ -115,14 +117,12 @@ function drawPalmTreeAccent(
   ctx.fillStyle = color;
   ctx.lineWidth = 3;
 
-  // Trunk
   ctx.beginPath();
   ctx.moveTo(0, 50);
   ctx.quadraticCurveTo(8, 25, 12, 0);
   ctx.lineWidth = 5;
   ctx.stroke();
 
-  // Fronds
   const angles = [-0.8, -0.4, 0, 0.4, 0.8];
   angles.forEach((a) => {
     ctx.save();
@@ -144,7 +144,9 @@ function drawGoaBadge(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
-  scale = 1
+  scale = 1,
+  badgeBg: string = T.magenta,
+  badgeText: string = T.yellow
 ) {
   ctx.save();
   ctx.translate(cx, cy);
@@ -154,15 +156,13 @@ function drawGoaBadge(
   const w = 110;
   const h = 48;
 
-  // Background Badge
   roundRectPath(ctx, -w / 2, -h / 2, w, h, 24);
-  ctx.fillStyle = T.magenta;
+  ctx.fillStyle = badgeBg;
   ctx.fill();
-  ctx.strokeStyle = T.yellow;
+  ctx.strokeStyle = badgeText;
   ctx.lineWidth = 4;
   ctx.stroke();
 
-  // Devanagari text
   ctx.fillStyle = T.white;
   ctx.font = "900 28px sans-serif";
   ctx.textAlign = "center";
@@ -172,11 +172,55 @@ function drawGoaBadge(
   ctx.restore();
 }
 
-async function qrToImageBitmap(payload: string, size: number): Promise<ImageBitmap> {
+/** Draws custom sticker badge */
+function drawStickerBadge(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  sticker: StickerPreset,
+  accentColor: string
+) {
+  if (sticker === "none") return;
+
+  const labels: Record<Exclude<StickerPreset, "none">, { text: string; icon: string }> = {
+    pirate: { text: "PIRATE CREW 🏴‍☠️", icon: "🏴‍☠️" },
+    cyber: { text: "CYBER HACKER ⚡", icon: "⚡" },
+    anime: { text: "ANIME MODE 🎌", icon: "🎌" },
+    rocket: { text: "SHIPPING 3AM 🚀", icon: "🚀" },
+    palm: { text: "GOA CHILL 🌴", icon: "🌴" },
+  };
+
+  const item = labels[sticker as keyof typeof labels];
+  if (!item) return;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(-0.05);
+
+  const w = 180;
+  const h = 40;
+
+  roundRectPath(ctx, -w / 2, -h / 2, w, h, 12);
+  ctx.fillStyle = accentColor;
+  ctx.fill();
+  ctx.strokeStyle = "#111111";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.fillStyle = "#111111";
+  ctx.font = `800 16px ${theme.font.mono}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(item.text, 0, 1);
+
+  ctx.restore();
+}
+
+async function qrToImageBitmap(payload: string, size: number, darkColor: string = T.navy): Promise<ImageBitmap> {
   const dataUrl = await QRCode.toDataURL(payload, {
     margin: 0,
     width: size,
-    color: { dark: T.navy, light: "#00000000" },
+    color: { dark: darkColor, light: "#00000000" },
   });
   const res = await fetch(dataUrl);
   const blob = await res.blob();
@@ -191,46 +235,49 @@ export function drawPortholeFrame(
   canvas: HTMLCanvasElement,
   photo: ImageBitmap | null,
   builderNumber: string,
-  faceCenter?: FaceCenter | null
+  faceCenter?: FaceCenter | null,
+  themePreset: ThemePreset = "palmEmerald",
+  characterPhoto?: ImageBitmap | null
 ) {
+  const pal = themePalettes[themePreset] || themePalettes.palmEmerald;
   const { w, h } = theme.export.porthole;
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d")!;
 
-  // Palm Emerald Background
-  ctx.fillStyle = T.emerald;
+  // Background
+  ctx.fillStyle = pal.bg;
   ctx.fillRect(0, 0, w, h);
 
   // Background palm tree silhouettes
-  drawPalmTreeAccent(ctx, 40, h - 180, 2.2, "#034823");
-  drawPalmTreeAccent(ctx, w - 120, h - 220, 2.5, "#034823");
+  drawPalmTreeAccent(ctx, 40, h - 180, 2.2, pal.headerBg);
+  drawPalmTreeAccent(ctx, w - 120, h - 220, 2.5, pal.headerBg);
 
   const cx = w / 2;
   const cy = h / 2 - 20;
   const photoRadius = w * 0.35;
 
   // Photo
-  drawCircularPhoto(ctx, photo, cx, cy, photoRadius, faceCenter);
+  drawCircularPhoto(ctx, photo, cx, cy, photoRadius, faceCenter, pal.sand);
 
-  // Dual Brandkit Ring: Sun Yellow + Hot Magenta + Palm Emerald
+  // Dual Brandkit Ring: Yellow + Magenta
   ctx.save();
-  ctx.strokeStyle = T.yellow;
+  ctx.strokeStyle = pal.accentYellow;
   ctx.lineWidth = 24;
   ctx.beginPath();
   ctx.arc(cx, cy, photoRadius + 12, 0, Math.PI * 2);
   ctx.stroke();
 
-  ctx.strokeStyle = T.magenta;
+  ctx.strokeStyle = pal.accentMagenta;
   ctx.lineWidth = 8;
   ctx.beginPath();
   ctx.arc(cx, cy, photoRadius + 28, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 
-  // Circular Text "HACKER HOUSE · GOA 2026 · 2:47 PM STUDIO"
+  // Circular Text
   ctx.save();
-  ctx.fillStyle = T.yellow;
+  ctx.fillStyle = pal.accentYellow;
   ctx.font = `700 20px ${theme.font.mono}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -247,20 +294,33 @@ export function drawPortholeFrame(
   });
   ctx.restore();
 
-  // Devanagari "गोवा" Badge attached to bottom-right of avatar
+  // Devanagari "गोवा" Badge
   const badgeCx = cx + photoRadius * 0.72;
   const badgeCy = cy + photoRadius * 0.72;
-  drawGoaBadge(ctx, badgeCx, badgeCy, 1.4);
+  drawGoaBadge(ctx, badgeCx, badgeCy, 1.4, pal.accentMagenta, pal.accentYellow);
 
-  // Builder Number Stamp Top Right
+  // Character Mascot Co-Pilot Avatar Badge if uploaded!
+  if (characterPhoto) {
+    const mascotR = 68;
+    const mascotCx = cx - photoRadius * 0.72;
+    const mascotCy = cy + photoRadius * 0.72;
+    drawCircularPhoto(ctx, characterPhoto, mascotCx, mascotCy, mascotR);
+    ctx.strokeStyle = pal.accentYellow;
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(mascotCx, mascotCy, mascotR + 2, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Builder Number Stamp Top
   ctx.save();
-  ctx.fillStyle = T.yellow;
+  ctx.fillStyle = pal.accentYellow;
   ctx.fillRect(cx - 140, 50, 280, 48);
-  ctx.strokeStyle = T.magenta;
+  ctx.strokeStyle = pal.accentMagenta;
   ctx.lineWidth = 4;
   ctx.strokeRect(cx - 140, 50, 280, 48);
 
-  ctx.fillStyle = T.emeraldDark;
+  ctx.fillStyle = "#111111";
   ctx.font = `800 24px ${theme.font.mono}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -269,7 +329,7 @@ export function drawPortholeFrame(
 
   // Bottom Tagline
   ctx.save();
-  ctx.fillStyle = T.white;
+  ctx.fillStyle = pal.cardStock;
   ctx.font = `600 28px ${theme.font.mono}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
@@ -285,18 +345,21 @@ export async function drawBoardingPass(
   canvas: HTMLCanvasElement,
   data: BoardingPassData
 ) {
+  const themePreset = data.themePreset || "palmEmerald";
+  const pal = themePalettes[themePreset] || themePalettes.palmEmerald;
+
   const { w, h } = theme.export.boardingPass;
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d")!;
 
-  // Palm Emerald Background
-  ctx.fillStyle = T.emerald;
+  // Background
+  ctx.fillStyle = pal.bg;
   ctx.fillRect(0, 0, w, h);
 
   // Background Palm Accent
-  drawPalmTreeAccent(ctx, 20, 20, 2, "#034823");
-  drawPalmTreeAccent(ctx, w - 80, h - 160, 2.2, "#034823");
+  drawPalmTreeAccent(ctx, 20, 20, 2, pal.headerBg);
+  drawPalmTreeAccent(ctx, w - 80, h - 160, 2.2, pal.headerBg);
 
   const margin = 40;
   const cardX = margin;
@@ -307,10 +370,10 @@ export async function drawBoardingPass(
 
   // Ticket Body Fill
   roundRectPath(ctx, cardX, cardY, cardW, cardH, 28);
-  ctx.fillStyle = T.cardStock;
+  ctx.fillStyle = pal.cardStock;
   ctx.fill();
   ctx.lineWidth = 4;
-  ctx.strokeStyle = T.yellow;
+  ctx.strokeStyle = pal.accentYellow;
   ctx.stroke();
 
   // Paper Grain Texture Overlay
@@ -320,7 +383,7 @@ export async function drawBoardingPass(
   applyNoiseOverlay(ctx, cardX, cardY, cardW, cardH, 14);
   ctx.restore();
 
-  // --- Main Stub Header Banner (Emerald + Sun Yellow Title + Goa Badge) ----
+  // --- Main Stub Header Banner (Header + Sun Yellow Title + Goa Badge) ----
   const padX = 56;
   const contentX = cardX + padX;
   const contentW = stubSplitX - cardX - padX * 1.4;
@@ -329,13 +392,13 @@ export async function drawBoardingPass(
   roundRectPath(ctx, cardX, cardY, cardW, cardH, 28);
   ctx.clip();
 
-  // Header Bar Background (Emerald)
+  // Header Bar Background
   const headerH = 140;
-  ctx.fillStyle = T.emerald;
+  ctx.fillStyle = pal.headerBg;
   ctx.fillRect(cardX, cardY, stubSplitX - cardX, headerH);
 
   // Studio Stamp Top Left
-  ctx.fillStyle = T.yellow;
+  ctx.fillStyle = pal.accentYellow;
   ctx.font = `800 18px ${theme.font.mono}`;
   ctx.fillText("2:47 PM STUDIO", contentX, cardY + 36);
 
@@ -344,17 +407,17 @@ export async function drawBoardingPass(
   ctx.fillText("GOA, INDIA · 28-31 OCT 2026", contentX + contentW, cardY + 36);
   ctx.textAlign = "left";
 
-  // Main Banner "HACKER HOUSE" (Sun Yellow Serif)
-  ctx.fillStyle = T.yellow;
+  // Main Banner "HACKER HOUSE"
+  ctx.fillStyle = pal.titleColor;
   ctx.font = `900 58px ${theme.font.serif}`;
   ctx.fillText("HACKER HOUSE", contentX, cardY + 104);
 
   // Devanagari "गोवा" Badge Overlaid on Banner
   const titleWidth = ctx.measureText("HACKER HOUSE").width;
-  drawGoaBadge(ctx, contentX + titleWidth / 2 + 10, cardY + 76, 1.1);
+  drawGoaBadge(ctx, contentX + titleWidth / 2 + 10, cardY + 76, 1.1, pal.accentMagenta, pal.accentYellow);
 
-  // Header Divider Line (Hot Magenta)
-  ctx.strokeStyle = T.magenta;
+  // Header Divider Line
+  ctx.strokeStyle = pal.accentMagenta;
   ctx.lineWidth = 5;
   ctx.beginPath();
   ctx.moveTo(contentX, cardY + headerH);
@@ -363,37 +426,61 @@ export async function drawBoardingPass(
 
   // --- Passenger Body Section ---------------------------------------------
   const isTeam = data.passengers.length > 1;
+  const p0 = data.passengers[0];
 
   if (!isTeam) {
-    drawSoloBody(ctx, data.passengers[0], contentX, cardY, headerH);
+    drawSoloBody(ctx, p0, contentX, cardY, headerH, pal);
   } else {
-    drawTeamBody(ctx, data.passengers, contentX, cardY, contentW, headerH);
+    drawTeamBody(ctx, data.passengers, contentX, cardY, contentW, headerH, pal);
+  }
+
+  // Draw Sticker Badge if selected
+  if (data.stickerPreset && data.stickerPreset !== "none") {
+    drawStickerBadge(ctx, contentX + contentW - 100, cardY + headerH + 45, data.stickerPreset, pal.accentYellow);
+  }
+
+  // Draw Character Mascot Companion Avatar if uploaded!
+  if (p0?.characterPhoto) {
+    const mascotR = 55;
+    const mascotCx = contentX + contentW - 65;
+    const mascotCy = cardY + headerH + 115;
+
+    drawCircularPhoto(ctx, p0.characterPhoto, mascotCx, mascotCy, mascotR);
+    ctx.strokeStyle = pal.accentMagenta;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(mascotCx, mascotCy, mascotR + 2, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Mascot Label
+    ctx.fillStyle = pal.navy;
+    ctx.font = `800 12px ${theme.font.mono}`;
+    ctx.textAlign = "center";
+    ctx.fillText("CO-PILOT", mascotCx, mascotCy + mascotR + 18);
   }
 
   // --- Signpost Field Badges (SEAT / GATE / CLASS) -------------------------
   const fieldY = cardY + cardH - 195;
   const fields: [string, string, string][] = isTeam
     ? [
-        ["ROW", data.seat, T.yellow],
-        ["GATE", data.gate, T.magenta],
-        ["SQUAD", `${data.passengers.length} BUILDERS`, T.yellow],
+        ["ROW", data.seat, pal.accentYellow],
+        ["GATE", data.gate, pal.accentMagenta],
+        ["SQUAD", `${data.passengers.length} BUILDERS`, pal.accentYellow],
       ]
     : [
-        ["SEAT", data.seat, T.yellow],
-        ["GATE", data.gate, T.magenta],
-        ["CLASS", data.passengers[0]?.builderTitle ?? "", T.yellow],
+        ["SEAT", data.seat, pal.accentYellow],
+        ["GATE", data.gate, pal.accentMagenta],
+        ["CLASS", p0?.builderTitle ?? "", pal.accentYellow],
       ];
 
   const fieldColW = contentW / 3;
   fields.forEach(([label, value, badgeColor], i) => {
     const fx = contentX + i * fieldColW;
 
-    // Label
-    ctx.fillStyle = T.navy;
+    ctx.fillStyle = pal.navy;
     ctx.font = `700 18px ${theme.font.mono}`;
     ctx.fillText(label, fx, fieldY);
 
-    // Signpost Badge Box
     const bw = fieldColW - 24;
     const bh = 54;
     const by = fieldY + 12;
@@ -401,18 +488,17 @@ export async function drawBoardingPass(
     roundRectPath(ctx, fx, by, bw, bh, 12);
     ctx.fillStyle = badgeColor;
     ctx.fill();
-    ctx.strokeStyle = T.navy;
+    ctx.strokeStyle = pal.navy;
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Text inside signpost badge
-    ctx.fillStyle = badgeColor === T.yellow ? T.navy : T.white;
+    ctx.fillStyle = badgeColor === pal.accentYellow ? pal.navy : "#FFFFFF";
     ctx.font = `700 24px ${theme.font.mono}`;
     wrapOrFit(ctx, value.toUpperCase(), fx + 12, by + 34, bw - 24, 24);
   });
 
   // Footer Meta Line
-  ctx.strokeStyle = T.sand;
+  ctx.strokeStyle = pal.sand;
   ctx.lineWidth = 2;
   ctx.setLineDash([6, 6]);
   ctx.beginPath();
@@ -421,7 +507,7 @@ export async function drawBoardingPass(
   ctx.stroke();
   ctx.setLineDash([]);
 
-  ctx.fillStyle = T.navy;
+  ctx.fillStyle = pal.navy;
   ctx.font = `600 18px ${theme.font.mono}`;
   ctx.fillText(
     `FLIGHT ${data.flightCode} · ${isTeam ? "TEAM MANIFEST" : "SOLO BUILDER PASS"} · 2:47 PM STUDIO`,
@@ -432,7 +518,7 @@ export async function drawBoardingPass(
   ctx.restore(); // end main stub clip
 
   // --- Perforation Seam --------------------------------------------------
-  drawPerforation(ctx, stubSplitX, cardY, cardY + cardH);
+  drawPerforation(ctx, stubSplitX, cardY, cardY + cardH, pal.bg);
 
   // --- QR Right Stub -----------------------------------------------------
   ctx.save();
@@ -442,15 +528,15 @@ export async function drawBoardingPass(
   const stubW = cardX + cardW - stubSplitX;
   const stubCx = stubSplitX + stubW / 2;
 
-  // Stub Background (Sun Yellow Panel)
-  ctx.fillStyle = T.yellow;
+  // Stub Background
+  ctx.fillStyle = pal.accentYellow;
   ctx.fillRect(stubSplitX, cardY, stubW, cardH);
 
-  // Stub Header Banner (Emerald)
-  ctx.fillStyle = T.emerald;
+  // Stub Header Banner
+  ctx.fillStyle = pal.headerBg;
   ctx.fillRect(stubSplitX, cardY, stubW, 60);
 
-  ctx.fillStyle = T.yellow;
+  ctx.fillStyle = pal.accentYellow;
   ctx.font = `800 18px ${theme.font.mono}`;
   ctx.textAlign = "center";
   ctx.fillText("HH GOA 26", stubCx, cardY + 36);
@@ -458,7 +544,7 @@ export async function drawBoardingPass(
   // QR Code
   const qrSize = Math.min(stubW - 60, 240);
   try {
-    const qrBitmap = await qrToImageBitmap(data.qrPayload, qrSize);
+    const qrBitmap = await qrToImageBitmap(data.qrPayload, qrSize, pal.navy);
     ctx.drawImage(
       qrBitmap,
       stubCx - qrSize / 2,
@@ -472,13 +558,13 @@ export async function drawBoardingPass(
 
   // Seat Badge below QR
   roundRectPath(ctx, stubCx - 70, cardY + 84 + qrSize + 24, 140, 48, 12);
-  ctx.fillStyle = T.magenta;
+  ctx.fillStyle = pal.accentMagenta;
   ctx.fill();
-  ctx.strokeStyle = T.navy;
+  ctx.strokeStyle = pal.navy;
   ctx.lineWidth = 3;
   ctx.stroke();
 
-  ctx.fillStyle = T.white;
+  ctx.fillStyle = "#FFFFFF";
   ctx.font = `800 24px ${theme.font.mono}`;
   ctx.textAlign = "center";
   ctx.fillText(data.seat, stubCx, cardY + 84 + qrSize + 56);
@@ -487,7 +573,7 @@ export async function drawBoardingPass(
   ctx.save();
   ctx.translate(stubCx, cardY + cardH - 50);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = T.emeraldDark;
+  ctx.fillStyle = pal.navy;
   ctx.font = `800 20px ${theme.font.mono}`;
   ctx.textAlign = "center";
   ctx.fillText("#FrameInGoa", 0, 0);
@@ -501,34 +587,41 @@ function drawSoloBody(
   passenger: Passenger | undefined,
   contentX: number,
   cardY: number,
-  headerH: number
+  headerH: number,
+  pal: ThemeColors
 ) {
   const photoR = 85;
   const photoCx = contentX + photoR;
   const photoCy = cardY + headerH + 30 + photoR;
 
-  // Photo with Sun Yellow + Emerald outline
+  // Photo
   drawCircularPhoto(ctx, passenger?.photo ?? null, photoCx, photoCy, photoR, passenger?.faceCenter);
-  ctx.strokeStyle = T.yellow;
+  ctx.strokeStyle = pal.accentYellow;
   ctx.lineWidth = 8;
   ctx.beginPath();
   ctx.arc(photoCx, photoCy, photoR + 4, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.strokeStyle = T.emerald;
+  ctx.strokeStyle = pal.headerBg;
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.arc(photoCx, photoCy, photoR + 9, 0, Math.PI * 2);
   ctx.stroke();
 
   const textX = photoCx + photoR + 32;
-  ctx.fillStyle = T.navy;
+  ctx.fillStyle = pal.navy;
   ctx.font = `700 44px ${theme.font.display}`;
   ctx.textAlign = "left";
-  ctx.fillText(passenger?.name || "Builder Name", textX, photoCy - 10);
+  ctx.fillText(passenger?.name || "Builder Name", textX, photoCy - 18);
 
-  ctx.fillStyle = T.magenta;
+  ctx.fillStyle = pal.accentMagenta;
   ctx.font = `600 24px ${theme.font.mono}`;
-  ctx.fillText(passenger?.stackOrRole || "Stack / Role", textX, photoCy + 32);
+  ctx.fillText(passenger?.stackOrRole || "Stack / Role", textX, photoCy + 20);
+
+  // Customized Motto / Status Tagline!
+  const motto = passenger?.customMotto || "Shipping at HH Goa 2026 🚀";
+  ctx.fillStyle = pal.navy;
+  ctx.font = `500 18px ${theme.font.mono}`;
+  ctx.fillText(`"${motto}"`, textX, photoCy + 52);
 }
 
 function drawTeamBody(
@@ -537,7 +630,8 @@ function drawTeamBody(
   contentX: number,
   cardY: number,
   contentW: number,
-  headerH: number
+  headerH: number,
+  pal: ThemeColors
 ) {
   const shown = passengers.slice(0, 4);
   const overflow = passengers.length - shown.length;
@@ -548,13 +642,13 @@ function drawTeamBody(
   shown.forEach((p, i) => {
     const cx = contentX + thumbR + i * (thumbR * 2 + gap);
     drawCircularPhoto(ctx, p.photo, cx, rowY, thumbR, p.faceCenter);
-    ctx.strokeStyle = T.yellow;
+    ctx.strokeStyle = pal.accentYellow;
     ctx.lineWidth = 5;
     ctx.beginPath();
     ctx.arc(cx, rowY, thumbR + 3, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.fillStyle = T.navy;
+    ctx.fillStyle = pal.navy;
     ctx.font = `700 18px ${theme.font.display}`;
     ctx.textAlign = "center";
     const firstName = (p.name || "Builder").split(" ")[0];
@@ -562,14 +656,14 @@ function drawTeamBody(
   });
 
   if (overflow > 0) {
-    ctx.fillStyle = T.magenta;
+    ctx.fillStyle = pal.accentMagenta;
     ctx.font = `700 18px ${theme.font.mono}`;
     ctx.textAlign = "left";
     ctx.fillText(`+${overflow} more`, contentX + contentW - 110, rowY + thumbR + 30);
   }
 
   ctx.textAlign = "left";
-  ctx.fillStyle = T.navy;
+  ctx.fillStyle = pal.navy;
   ctx.font = `700 38px ${theme.font.display}`;
   ctx.fillText("Team Builder Crew", contentX, rowY + thumbR + 90);
 }

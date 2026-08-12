@@ -1,21 +1,8 @@
-/**
- * React hook that manages the OffscreenCanvas Web Worker lifecycle.
- *
- * Renders boarding pass / porthole frames off the main thread using
- * transferable ImageBitmaps (zero-copy). Falls back to main-thread
- * rendering when OffscreenCanvas isn't supported (Safari < 16.4,
- * or environments where workers can't be constructed).
- *
- * Usage:
- *   const render = useCanvasWorker(canvasRef);
- *   render({ format: "porthole", ... });
- */
-
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
 import QRCode from "qrcode";
-import { theme } from "./theme";
+import { theme, themePalettes } from "./theme";
 import { drawBoardingPass, drawPortholeFrame } from "./canvas-engine";
 import type { BoardingPassData, CardFormat } from "./types";
 import type { RenderRequest, RenderResponse } from "../workers/canvas-worker";
@@ -26,17 +13,11 @@ interface RenderOptions {
   builderNumber: string;
 }
 
-/**
- * Generates a QR code as an ImageBitmap on the main thread.
- * The worker can't use the `qrcode` library (relies on DOM canvas),
- * so we pre-render it and transfer the bitmap.
- */
-async function generateQrBitmap(payload: string, size: number): Promise<ImageBitmap> {
-  const T = theme.color;
+async function generateQrBitmap(payload: string, size: number, darkColor = "#0A2416"): Promise<ImageBitmap> {
   const dataUrl = await QRCode.toDataURL(payload, {
     margin: 0,
     width: size,
-    color: { dark: T.navy, light: "#00000000" },
+    color: { dark: darkColor, light: "#00000000" },
   });
   const res = await fetch(dataUrl);
   const blob = await res.blob();
@@ -51,7 +32,6 @@ export function useCanvasWorker(
   const renderGen = useRef(0);
 
   useEffect(() => {
-    // Feature-detect OffscreenCanvas + Worker support
     try {
       if (typeof OffscreenCanvas !== "undefined" && typeof Worker !== "undefined") {
         const worker = new Worker(
@@ -61,7 +41,6 @@ export function useCanvasWorker(
         supportsOffscreen.current = true;
       }
     } catch {
-      // Worker construction failed — fall back to main thread
       supportsOffscreen.current = false;
     }
 
@@ -78,8 +57,9 @@ export function useCanvasWorker(
 
       const gen = ++renderGen.current;
       const { format, boardingPassData, builderNumber } = opts;
+      const themePreset = boardingPassData.themePreset || "palmEmerald";
+      const pal = themePalettes[themePreset] || themePalettes.palmEmerald;
 
-      // ─── Worker path ───────────────────────────────────────────
       if (supportsOffscreen.current && workerRef.current) {
         const worker = workerRef.current;
 
@@ -93,16 +73,18 @@ export function useCanvasWorker(
             photo: p?.photo ?? undefined,
             builderNumber,
             faceCenter: p?.faceCenter,
+            themePreset,
+            characterPhoto: p?.characterPhoto ?? undefined,
           };
         } else {
-          // Pre-render QR on main thread (qrcode uses DOM canvas)
           const stubW = (theme.export.boardingPass.w - 80) * 0.26;
-          const qrSize = Math.min(stubW - 60, 260);
+          const qrSize = Math.min(stubW - 60, 240);
           let qrBitmap: ImageBitmap | undefined;
           try {
             qrBitmap = await generateQrBitmap(
               boardingPassData.qrPayload,
-              qrSize
+              qrSize,
+              pal.navy
             );
           } catch {
             // QR is progressive enhancement
@@ -118,26 +100,29 @@ export function useCanvasWorker(
                 builderTitle: p.builderTitle,
                 photo: p.photo ?? undefined,
                 faceCenter: p.faceCenter,
+                characterPhoto: p.characterPhoto ?? undefined,
+                customMotto: p.customMotto,
               })),
               seat: boardingPassData.seat,
               gate: boardingPassData.gate,
               flightCode: boardingPassData.flightCode,
               qrBitmap,
               isTeam: boardingPassData.passengers.length > 1,
+              themePreset,
+              stickerPreset: boardingPassData.stickerPreset,
             },
           };
         }
 
-        // Collect transferable ImageBitmaps (zero-copy transfer)
         const transferables: Transferable[] = [];
         if (msg.photo) transferables.push(msg.photo);
+        if (msg.characterPhoto) transferables.push(msg.characterPhoto);
         if (msg.boardingPass?.qrBitmap) transferables.push(msg.boardingPass.qrBitmap);
         msg.boardingPass?.passengers.forEach((p) => {
           if (p.photo) transferables.push(p.photo);
+          if (p.characterPhoto) transferables.push(p.characterPhoto);
         });
 
-        // Since we transfer the bitmaps, we need to re-create them
-        // after the worker is done. Store a promise for the response.
         return new Promise<void>((resolve) => {
           const handler = (e: MessageEvent<RenderResponse>) => {
             if (gen !== renderGen.current) {
@@ -164,13 +149,15 @@ export function useCanvasWorker(
         });
       }
 
-      // ─── Fallback: main-thread rendering ────────────────────────
+      // Main-thread fallback
       if (format === "porthole") {
         drawPortholeFrame(
           canvas,
           boardingPassData.passengers[0]?.photo ?? null,
           builderNumber,
-          boardingPassData.passengers[0]?.faceCenter
+          boardingPassData.passengers[0]?.faceCenter,
+          themePreset,
+          boardingPassData.passengers[0]?.characterPhoto ?? null
         );
         return;
       }

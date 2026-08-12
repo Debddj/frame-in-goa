@@ -4,13 +4,14 @@ import { useMemo, useRef, useState } from "react";
 import UploadZone from "@/components/UploadZone";
 import CardPreview from "@/components/CardPreview";
 import ShareActions from "@/components/ShareActions";
+import { CustomizerPanel } from "@/components/CustomizerPanel";
 import { PalmTreesLeft, PalmTreesRight } from "@/components/PalmTreesBg";
 import { BeachSignpost } from "@/components/BeachSignpost";
 import { RightFlankPanel } from "@/components/RightFlankPanel";
 import { generateBuilderTitle, rerollBuilderTitle } from "@/lib/builder-titles";
 import { generateSeat, FLIGHT_CODE } from "@/lib/ids";
 import { GATES } from "@/lib/types";
-import type { CardFormat, Passenger } from "@/lib/types";
+import type { CardFormat, Passenger, StickerPreset, ThemePreset } from "@/lib/types";
 
 let uid = 0;
 function nextId() {
@@ -27,6 +28,9 @@ function emptyPassenger(title = "Genesis Day Builder"): Passenger {
     photo: null,
     photoObjectUrl: null,
     faceCenter: null,
+    characterPhoto: null,
+    characterPhotoUrl: null,
+    customMotto: "Shipping at HH Goa 2026 🚀",
   };
 }
 
@@ -72,6 +76,8 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
 export default function Home() {
   const [format, setFormat] = useState<CardFormat>("boardingPass");
   const [passengers, setPassengers] = useState<Passenger[]>([emptyPassenger()]);
+  const [themePreset, setThemePreset] = useState<ThemePreset>("palmEmerald");
+  const [stickerPreset, setStickerPreset] = useState<StickerPreset>("none");
   const [seat] = useState(() => generateSeat());
   const [gate] = useState<string>(() => GATES[Math.floor(Math.random() * GATES.length)]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -105,8 +111,10 @@ export default function Home() {
       gate,
       flightCode: FLIGHT_CODE,
       qrPayload: shareUrl || "https://hhgoa.com",
+      themePreset,
+      stickerPreset,
     }),
-    [passengers, seat, gate, shareUrl]
+    [passengers, seat, gate, shareUrl, themePreset, stickerPreset]
   );
 
   const primaryName = passengers[0]?.name || "a builder";
@@ -265,6 +273,27 @@ export default function Home() {
             </button>
           )}
         </section>
+
+        {/* ─── 🎨 Creative Customizer Panel ─── */}
+        <div className="animate-fade-in-up stagger-4">
+          <CustomizerPanel
+            themePreset={themePreset}
+            onSelectTheme={setThemePreset}
+            stickerPreset={stickerPreset}
+            onSelectSticker={setStickerPreset}
+            characterPhotoUrl={passengers[0]?.characterPhotoUrl ?? null}
+            onCharacterPhoto={(bitmap, url) =>
+              updatePassenger(passengers[0].id, {
+                characterPhoto: bitmap,
+                characterPhotoUrl: url,
+              })
+            }
+            customMotto={passengers[0]?.customMotto ?? "Shipping at HH Goa 2026 🚀"}
+            onMottoChange={(motto) =>
+              updatePassenger(passengers[0].id, { customMotto: motto })
+            }
+          />
+        </div>
 
         {/* ─── Share Actions ─── */}
         <div className="animate-fade-in-up stagger-4">
