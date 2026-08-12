@@ -24,6 +24,16 @@ async function generateQrBitmap(payload: string, size: number, darkColor = "#0A2
   return createImageBitmap(blob);
 }
 
+// ImageBitmap is a one-shot transferable: once it's included in a
+// postMessage transfer list, the original is detached and unusable.
+// Since a passenger's photo is stored once in React state and referenced
+// by every subsequent render, we must clone a fresh transferable copy
+// each time instead of transferring the stored bitmap directly — or every
+// render after the first throws DataCloneError and silently freezes the canvas.
+async function cloneForTransfer(bitmap: ImageBitmap): Promise<ImageBitmap> {
+  return createImageBitmap(bitmap);
+}
+
 export function useCanvasWorker(
   canvasRef: React.RefObject<HTMLCanvasElement | null>
 ) {
@@ -67,14 +77,19 @@ export function useCanvasWorker(
 
         if (format === "porthole") {
           const p = boardingPassData.passengers[0];
+          // Clone bitmaps so originals in React state stay alive
+          const photoClone = p?.photo ? await cloneForTransfer(p.photo) : undefined;
+          const characterClone = p?.characterPhoto
+            ? await cloneForTransfer(p.characterPhoto)
+            : undefined;
           msg = {
             type: "render",
             format: "porthole",
-            photo: p?.photo ?? undefined,
+            photo: photoClone,
             builderNumber,
             faceCenter: p?.faceCenter,
             themePreset,
-            characterPhoto: p?.characterPhoto ?? undefined,
+            characterPhoto: characterClone,
           };
         } else {
           const stubW = (theme.export.boardingPass.w - 80) * 0.26;
@@ -90,19 +105,26 @@ export function useCanvasWorker(
             // QR is progressive enhancement
           }
 
+          // Clone all passenger bitmaps before transferring
+          const passengers = await Promise.all(
+            boardingPassData.passengers.map(async (p) => ({
+              name: p.name,
+              stackOrRole: p.stackOrRole,
+              builderTitle: p.builderTitle,
+              photo: p.photo ? await cloneForTransfer(p.photo) : undefined,
+              faceCenter: p.faceCenter,
+              characterPhoto: p.characterPhoto
+                ? await cloneForTransfer(p.characterPhoto)
+                : undefined,
+              customMotto: p.customMotto,
+            }))
+          );
+
           msg = {
             type: "render",
             format: "boardingPass",
             boardingPass: {
-              passengers: boardingPassData.passengers.map((p) => ({
-                name: p.name,
-                stackOrRole: p.stackOrRole,
-                builderTitle: p.builderTitle,
-                photo: p.photo ?? undefined,
-                faceCenter: p.faceCenter,
-                characterPhoto: p.characterPhoto ?? undefined,
-                customMotto: p.customMotto,
-              })),
+              passengers,
               seat: boardingPassData.seat,
               gate: boardingPassData.gate,
               flightCode: boardingPassData.flightCode,
@@ -114,6 +136,7 @@ export function useCanvasWorker(
           };
         }
 
+        // Collect transferable clones (originals in state are untouched)
         const transferables: Transferable[] = [];
         if (msg.photo) transferables.push(msg.photo);
         if (msg.characterPhoto) transferables.push(msg.characterPhoto);
@@ -125,6 +148,9 @@ export function useCanvasWorker(
 
         return new Promise<void>((resolve) => {
           const handler = (e: MessageEvent<RenderResponse>) => {
+            // Self-remove so concurrent renders don't clobber each other
+            worker.removeEventListener("message", handler);
+
             if (gen !== renderGen.current) {
               resolve();
               return;
@@ -144,7 +170,9 @@ export function useCanvasWorker(
             resolve();
           };
 
-          worker.onmessage = handler;
+          // Use addEventListener instead of onmessage to avoid clobbering
+          // a still-in-flight handler from a previous render call
+          worker.addEventListener("message", handler);
           worker.postMessage(msg, transferables);
         });
       }

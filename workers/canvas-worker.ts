@@ -89,10 +89,11 @@ function drawCircularPhoto(
 
 function drawPerforation(
   ctx: OffscreenCanvasRenderingContext2D,
-  x: number, yTop: number, yBottom: number, bgColor: string
+  x: number, yTop: number, yBottom: number, bgColor: string,
+  sandColor: string = T.sand
 ) {
   ctx.save();
-  ctx.strokeStyle = T.sand;
+  ctx.strokeStyle = sandColor;
   ctx.lineWidth = 3;
   ctx.setLineDash([8, 10]);
   ctx.beginPath();
@@ -417,7 +418,7 @@ function renderBoardingPass(
   ctx.fillText("HACKER HOUSE", contentX, cardY + 104);
 
   const titleWidth = ctx.measureText("HACKER HOUSE").width;
-  drawGoaBadgeWorker(ctx, contentX + titleWidth / 2 + 10, cardY + 76, 1.1, pal.accentMagenta, pal.accentYellow);
+  drawGoaBadgeWorker(ctx, contentX + titleWidth + 70, cardY + 80, 1.1, pal.accentMagenta, pal.accentYellow);
 
   ctx.strokeStyle = pal.accentMagenta;
   ctx.lineWidth = 5;
@@ -554,7 +555,7 @@ function renderBoardingPass(
   );
   ctx.restore();
 
-  drawPerforation(ctx, stubSplitX, cardY, cardY + cardH, pal.bg);
+  drawPerforation(ctx, stubSplitX, cardY, cardY + cardH, pal.bg, pal.sand);
 
   ctx.save();
   roundRectPath(ctx, cardX, cardY, cardW, cardH, 28);

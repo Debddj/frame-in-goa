@@ -79,10 +79,11 @@ function drawPerforation(
   x: number,
   yTop: number,
   yBottom: number,
-  bgColor: string
+  bgColor: string,
+  sandColor: string = T.sand
 ) {
   ctx.save();
-  ctx.strokeStyle = T.sand;
+  ctx.strokeStyle = sandColor;
   ctx.lineWidth = 3;
   ctx.setLineDash([8, 10]);
   ctx.beginPath();
@@ -412,9 +413,9 @@ export async function drawBoardingPass(
   ctx.font = `900 58px ${theme.font.serif}`;
   ctx.fillText("HACKER HOUSE", contentX, cardY + 104);
 
-  // Devanagari "गोवा" Badge Overlaid on Banner
+  // Devanagari "गोवा" Badge positioned to the right of the title
   const titleWidth = ctx.measureText("HACKER HOUSE").width;
-  drawGoaBadge(ctx, contentX + titleWidth / 2 + 10, cardY + 76, 1.1, pal.accentMagenta, pal.accentYellow);
+  drawGoaBadge(ctx, contentX + titleWidth + 70, cardY + 80, 1.1, pal.accentMagenta, pal.accentYellow);
 
   // Header Divider Line
   ctx.strokeStyle = pal.accentMagenta;
@@ -518,7 +519,7 @@ export async function drawBoardingPass(
   ctx.restore(); // end main stub clip
 
   // --- Perforation Seam --------------------------------------------------
-  drawPerforation(ctx, stubSplitX, cardY, cardY + cardH, pal.bg);
+  drawPerforation(ctx, stubSplitX, cardY, cardY + cardH, pal.bg, pal.sand);
 
   // --- QR Right Stub -----------------------------------------------------
   ctx.save();
