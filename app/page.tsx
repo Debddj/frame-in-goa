@@ -5,7 +5,7 @@ import UploadZone from "@/components/UploadZone";
 import CardPreview from "@/components/CardPreview";
 import ShareActions from "@/components/ShareActions";
 import { CustomizerPanel } from "@/components/CustomizerPanel";
-import { PalmTreesLeft, PalmTreesRight } from "@/components/PalmTreesBg";
+import { PalmTreesLeft, PalmTreesRight, OceanWavesHorizon } from "@/components/PalmTreesBg";
 import { BeachSignpost } from "@/components/BeachSignpost";
 import { RightFlankPanel } from "@/components/RightFlankPanel";
 import { generateBuilderTitle, rerollBuilderTitle } from "@/lib/builder-titles";
@@ -125,9 +125,10 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#055C2E] text-[#FFFDF2] pb-16 relative overflow-x-hidden">
-      {/* Background Palm Trees & Beach Accents */}
+      {/* Background Palm Trees, Beach Illustrations & Ocean Waves */}
       <PalmTreesLeft />
       <PalmTreesRight />
+      <OceanWavesHorizon />
       <BeachSignpost />
       <RightFlankPanel />
 
