@@ -20,12 +20,17 @@ const serifFont = Playfair_Display({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://frame-in-goa-lac.vercel.app"),
   title: "HH Goa 2026 — Frame in Goa | 2:47 PM Studio",
   description:
     "Upload a photo, get an official branded HH Goa 2026 boarding pass or PFP frame, share it in one tap. #FrameInGoa",
+  alternates: {
+    canonical: "https://frame-in-goa-lac.vercel.app",
+  },
   openGraph: {
     title: "HH Goa 2026 — Frame in Goa",
     description: "Get your official HH Goa 2026 boarding pass. Upload → Frame → Share. #FrameInGoa",
+    url: "https://frame-in-goa-lac.vercel.app",
     siteName: "Frame in Goa",
     type: "website",
   },

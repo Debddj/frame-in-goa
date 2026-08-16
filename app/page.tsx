@@ -110,7 +110,7 @@ export default function Home() {
       seat,
       gate,
       flightCode: FLIGHT_CODE,
-      qrPayload: shareUrl || "https://hhgoa.com",
+      qrPayload: shareUrl || "https://frame-in-goa-lac.vercel.app",
       themePreset,
       stickerPreset,
     }),

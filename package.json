@@ -2,6 +2,7 @@
   "name": "hhgoa-boarding-pass",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://frame-in-goa-lac.vercel.app",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
